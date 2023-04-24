@@ -1,0 +1,2 @@
+from .SimpleLinModuleWithTE import SimpleLinModuleWithTE
+from .SimpleCNNModuleWithTE import SimpleCNNModuleWithTE
