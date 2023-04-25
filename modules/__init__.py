@@ -1,1 +1,2 @@
 from .SimpleCNNModuleWithTE import SimpleCNNModuleWithTE
+from .SimpleCNNModule import SimpleCNNModule

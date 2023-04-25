@@ -64,3 +64,14 @@ def aggregate_model_params(params_list):
     """ As in FedAVg considering the same weight for all the clients """
     aggregate_parameters = torch.mean(torch.stack(params_list, dim=-1), dim=-1)
     return aggregate_parameters
+
+
+# -------------------------------------------------------------------
+def eval(model, dataloader, loss_fn):
+    total_loss, acc = 0, 0
+    for x, y in dataloader:
+        x, y = x.to(DEVICE), y.to(DEVICE)
+        y_pred = model(x)
+        total_loss += loss_fn(y_pred, y)
+        acc += accuracy(y_pred, y)
+    return total_loss, acc

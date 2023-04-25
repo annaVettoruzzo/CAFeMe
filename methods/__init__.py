@@ -1,1 +1,1 @@
-from .PersonalizedFL import MultimodalFL_Client
+from .PersonalizedFL import MultimodalFL_Client, PerFedAvg_Client
