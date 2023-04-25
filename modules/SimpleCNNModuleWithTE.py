@@ -46,7 +46,6 @@ class TaskEncoderComplex(torch.nn.Module):
         x = self.cnn_block2(x)
         x = self.cnn_block3(x)
         x = self.flat(x)
-
         x = self.net(x)
         return x
 

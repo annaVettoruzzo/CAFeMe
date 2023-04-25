@@ -1,1 +1,1 @@
-from .FL_MultimodalMAML import FL_Client
+from .PersonalizedFL import MultimodalFL_Client
