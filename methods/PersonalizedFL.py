@@ -3,7 +3,7 @@ import copy
 from collections import defaultdict, OrderedDict
 from fedlab.utils.dataset.sampler import SubsetSampler
 
-from utils import DEVICE, func_call, accuracy, serialize_model_params
+from utils import DEVICE, func_call, accuracy, serialize_model_params, evaluate
 
 
 class MultimodalFL_Client:
@@ -28,6 +28,15 @@ class MultimodalFL_Client:
             x, y = next(self.iter_trainloader)
 
         return x.to(self.device), y.to(self.device)
+
+    # -------------------------------------------------------------------
+    def get_eval_data_batch(self, size_ratio=4):
+        x_test, y_test = self.get_data_batch()
+        for i in range(size_ratio - 1):
+            x, y = self.get_data_batch()
+            x_test, y_test = torch.cat((x_test, x), dim=0), torch.cat((y_test, y), dim=0)
+
+        return x_test.to(self.device), y_test.to(self.device)
 
     # -------------------------------------------------------------------
     def adapt(self, params_dict, data_batch):
@@ -70,16 +79,15 @@ class MultimodalFL_Client:
         cmodel = copy.deepcopy(global_model)
 
         optimizer = torch.optim.SGD(cmodel.parameters(), self.lr_in)
-        history = defaultdict(list)
 
+        test_acc = []
         for step in range(per_steps + 1):
-            x_eval, y_eval = self.get_data_batch()
+            x_eval, y_eval = self.get_eval_data_batch()
             y_eval_pred = cmodel(x_eval)
 
             # Evaluate current model on the test data
             acc = accuracy(y_eval_pred, y_eval)
-            history["pred"].append(y_eval_pred.cpu().detach())
-            history["eval"].append(acc)
+            test_acc.append(acc)
 
             # Adapt the model using training data
             x, y = self.get_data_batch()
@@ -89,7 +97,7 @@ class MultimodalFL_Client:
             loss.backward()
             optimizer.step()
 
-        return history
+        return test_acc
 
 
 
@@ -106,6 +114,7 @@ class PerFedAvg_Client:
         self.local_model = copy.deepcopy(global_model)
         self.local_optimizer = torch.optim.Adam(self.local_model.parameters(), lr=self.lr_out)
 
+    # -------------------------------------------------------------------
     def get_data_batch(self):
         try:
             x, y = next(self.iter_trainloader)
@@ -115,6 +124,16 @@ class PerFedAvg_Client:
 
         return x.to(self.device), y.to(self.device)
 
+    # -------------------------------------------------------------------
+    def get_eval_data_batch(self, size_ratio=4):
+        x_test, y_test = self.get_data_batch()
+        for i in range(size_ratio - 1):
+            x, y = self.get_data_batch()
+            x_test, y_test = torch.cat((x_test, x), dim=0), torch.cat((y_test, y), dim=0)
+
+        return x_test.to(self.device), y_test.to(self.device)
+
+    # -------------------------------------------------------------------
     def fit(self, global_model, adapt_steps, hessian_free=True):
         self.local_model.load_state_dict(global_model.state_dict())
 
@@ -134,13 +153,13 @@ class PerFedAvg_Client:
             for param, grad1, grad2 in zip(self.local_model.parameters(), grads_1st, grads_2nd):
                 param.data.sub_(self.lr_out * grad1 - self.lr_out * self.lr_in * grad2)
 
-            # only for printing
-            x_eval, y_eval = self.get_data_batch()
-            y_pred = self.local_model(x_eval)
-            loss = self.loss_fn(y_pred, y_eval)
+            x_ev, y_ev = self.get_data_batch()
+            y_pred = self.local_model(x_ev)
+            loss = self.loss_fn(y_pred, y_ev)
 
         return serialize_model_params(self.local_model), loss.item()
 
+    # -------------------------------------------------------------------
     def compute_grad(self, model, data_batch, v=None, second_order_grads=False):
         x, y = data_batch
         if second_order_grads:
@@ -176,22 +195,21 @@ class PerFedAvg_Client:
             grads = torch.autograd.grad(loss, model.parameters())
             return grads
 
+    # -------------------------------------------------------------------
     def perfl_eval(self, global_model, per_steps):
         # Copy the model to avoid adapting the original one
         cmodel = copy.deepcopy(global_model)
 
         optimizer = torch.optim.SGD(cmodel.parameters(), self.lr_in)
 
-        history = defaultdict(list)
-
+        test_acc = []
         for step in range(per_steps + 1):
-            x_eval, y_eval = self.get_data_batch()
+            x_eval, y_eval = self.get_eval_data_batch()
             y_eval_pred = cmodel(x_eval)
 
             # Evaluate current model on the test data
             acc = accuracy(y_eval_pred, y_eval)
-            history["pred"].append(y_eval_pred.cpu().detach())
-            history["eval"].append(acc)
+            test_acc.append(acc)
 
             # Adapt the model using training data
             x, y = self.get_data_batch()
@@ -201,4 +219,4 @@ class PerFedAvg_Client:
             loss.backward()
             optimizer.step()
 
-        return history
+        return test_acc

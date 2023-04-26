@@ -3,7 +3,7 @@ from torchvision import transforms
 import numpy as np
 import random
 from pathlib import Path
-from utils import DEVICE, train
+from utils import DEVICE, train, evaluate
 from modules import SimpleCNNModuleWithTE, SimpleCNNModule
 from methods import MultimodalFL_Client, PerFedAvg_Client
 from datasets import get_dataset, get_clients_id
@@ -44,14 +44,9 @@ clients = [MultimodalFL_Client(client_id, trainset, shards_part, global_model, l
 # train
 global_model = train(global_model, clients, clients_training, num_clients_per_round, adapt_steps, global_steps)
 torch.save(global_model.state_dict(), PATH / "proposed_c1")
-
 # test
-tot_acc = []
-for client_id in clients_test:
-    history = clients[client_id].perfl_eval(global_model, per_steps)
-    tot_acc.append(history["eval"])
-
-print(f"Accuracy: {np.mean(tot_acc, axis=0)}")
+accuracy_proposed = evaluate(global_model, clients, clients_test, per_steps, save=PATH / "acc_proposed_c1")
+print(f"Accuracy proposed: {accuracy_proposed[-1]}")
 
 ########################### TRAINING PER-FEDAVG ###########################
 perfedavg_model = SimpleCNNModule(num_classes).to(DEVICE)
@@ -60,12 +55,7 @@ clients = [PerFedAvg_Client(client_id, trainset, shards_part, perfedavg_model, l
 # train
 perfedavg_model = train(perfedavg_model, clients, clients_training, num_clients_per_round, adapt_steps, global_steps)
 torch.save(perfedavg_model.state_dict(), PATH / "per_fedavg")
-
 # test
-tot_acc = []
-for client_id in clients_test:
-    history = clients[client_id].perfl_eval(perfedavg_model, per_steps)
-    tot_acc.append(history["eval"])
-
-print(f"Accuracy: {np.mean(tot_acc, axis=0)}")
+accuracy_perfedavg = evaluate(perfedavg_model, clients, clients_test, per_steps, save=PATH / "acc_perfedavg")
+print(f"Accuracy PerFedAvg: {accuracy_perfedavg[-1]}")
 

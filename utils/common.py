@@ -1,6 +1,7 @@
 import torch
 import os
 import numpy as np
+import pickle
 from .stateless import functional_call
 from sklearn.metrics import accuracy_score
 
@@ -67,11 +68,15 @@ def aggregate_model_params(params_list):
 
 
 # -------------------------------------------------------------------
-def eval(model, dataloader, loss_fn):
-    total_loss, acc = 0, 0
-    for x, y in dataloader:
-        x, y = x.to(DEVICE), y.to(DEVICE)
-        y_pred = model(x)
-        total_loss += loss_fn(y_pred, y)
-        acc += accuracy(y_pred, y)
-    return total_loss, acc
+def evaluate(global_model, clients, clients_test, steps, save=""):
+    tot_acc = []
+    for client_id in clients_test:
+        eval_acc = clients[client_id].perfl_eval(global_model, steps)
+        tot_acc.append(eval_acc)
+
+    avg_acc = np.mean(tot_acc, axis=0)
+
+    if save:
+        with open(f'{save}.pkl', 'wb') as file:
+            pickle.dump(avg_acc, file)
+    return avg_acc
