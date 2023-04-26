@@ -68,10 +68,31 @@ def aggregate_model_params(params_list):
 
 
 # -------------------------------------------------------------------
-def evaluate(global_model, clients, clients_test, steps, save=""):
+def evaluate_perfl(global_model, clients, clients_test, steps, save=""):
     tot_acc = []
     for client_id in clients_test:
         eval_acc = clients[client_id].perfl_eval(global_model, steps)
+        tot_acc.append(eval_acc)
+
+    avg_acc = np.mean(tot_acc, axis=0)
+
+    if save:
+        with open(f'{save}.pkl', 'wb') as file:
+            pickle.dump(avg_acc, file)
+    return avg_acc
+
+
+# -------------------------------------------------------------------
+def evaluate_fl(global_model, test_dataset, batch_size=20, save=""):
+    testloader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
+
+    tot_acc = []
+    for batch_idx, (images, labels) in enumerate(testloader):
+        images, labels = images.to(DEVICE), labels.to(DEVICE)
+
+        # Inference
+        outputs = global_model(images)
+        eval_acc = accuracy(outputs, labels)
         tot_acc.append(eval_acc)
 
     avg_acc = np.mean(tot_acc, axis=0)
