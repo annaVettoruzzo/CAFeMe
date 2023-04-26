@@ -5,15 +5,11 @@ from fedlab.utils.dataset.partition import CIFAR10Partitioner
 
 
 # -------------------------------------------------------------------
-def get_dataset(dataset, num_clients=100, transforms=tr.ToTensor(), partition="shards", seed=0, test=False):
+def get_dataset(dataset, num_clients=100, transforms=tr.ToTensor(), partition="shards", seed=0):
     if dataset == "cifar10":
-        if test:
-            testset = torchvision.datasets.CIFAR10(root=f"./data/{dataset}/", train=False, download=True, transform=transforms)
-            return testset
-        else:
-            trainset = torchvision.datasets.CIFAR10(root=f"./data/{dataset}/", train=True, download=True, transform=transforms)
-            shards_part = CIFAR10Partitioner(trainset.targets, num_clients, balance=None, partition=partition, num_shards=200, seed=seed)
-            return trainset, shards_part
+        trainset = torchvision.datasets.CIFAR10(root=f"./data/{dataset}/", train=True, download=True, transform=transforms)
+        shards_part = CIFAR10Partitioner(trainset.targets, num_clients, balance=None, partition=partition, num_shards=200, seed=seed)
+    return trainset, shards_part
 
 
 # -------------------------------------------------------------------

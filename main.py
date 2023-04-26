@@ -67,6 +67,5 @@ clients = [FedAvgClient(client_id, trainset, shards_part, fedavg_model, loss_fn,
 fedavg_model = train(fedavg_model, clients, clients_training, num_clients_per_round, adapt_steps, global_steps)
 torch.save(fedavg_model.state_dict(), PATH / "fedavg")
 # test
-testset = get_dataset(dataset, test=True)
-accuracy_fedavg = evaluate_fl(fedavg_model, testset, batch_size, save=PATH / "acc_fedavg")
+accuracy_fedavg = evaluate_fl(fedavg_model, clients, clients_test, save=PATH / "acc_fedavg")
 print(f"Accuracy FedAvg: {accuracy_fedavg}")

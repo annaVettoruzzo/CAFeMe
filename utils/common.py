@@ -83,16 +83,10 @@ def evaluate_perfl(global_model, clients, clients_test, steps, save=""):
 
 
 # -------------------------------------------------------------------
-def evaluate_fl(global_model, test_dataset, batch_size=20, save=""):
-    testloader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
-
+def evaluate_fl(global_model, clients, clients_test, save=""):
     tot_acc = []
-    for batch_idx, (images, labels) in enumerate(testloader):
-        images, labels = images.to(DEVICE), labels.to(DEVICE)
-
-        # Inference
-        outputs = global_model(images)
-        eval_acc = accuracy(outputs, labels)
+    for client_id in clients_test:
+        eval_acc = clients[client_id].fl_eval(global_model)
         tot_acc.append(eval_acc)
 
     avg_acc = np.mean(tot_acc, axis=0)

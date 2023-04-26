@@ -3,7 +3,7 @@ import copy
 import numpy as np
 from fedlab.utils.dataset.sampler import SubsetSampler
 
-from utils import DEVICE, serialize_model_params
+from utils import DEVICE, serialize_model_params, accuracy
 
 
 class FedAvgClient:
@@ -35,3 +35,16 @@ class FedAvgClient:
                 batch_loss.append(loss.item())
 
         return serialize_model_params(self.local_model), np.mean(batch_loss)
+
+    # -------------------------------------------------------------------
+    def fl_eval(self, global_model):
+        tot_acc = []
+        for batch_idx, (images, labels) in enumerate(self.trainloader):
+            images, labels = images.to(DEVICE), labels.to(DEVICE)
+
+            # Inference
+            outputs = global_model(images)
+            eval_acc = accuracy(outputs, labels)
+            tot_acc.append(eval_acc)
+
+        return np.mean(tot_acc)
