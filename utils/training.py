@@ -26,7 +26,7 @@ def train(global_model, clients, clients_training, num_clients_per_round, adapt_
     return global_model
 
 
-def train_ifca(global_model, clients, clients_training, num_clients_per_round, adapt_steps, global_steps):
+def train_ifca(global_model, clients, clients_training, num_clients_per_round, adapt_steps, global_steps, weight_sharing=False):
     for step in range(global_steps):
         selected_clients = random.sample(clients_training, num_clients_per_round)
 
@@ -44,7 +44,7 @@ def train_ifca(global_model, clients, clients_training, num_clients_per_round, a
         for i, model in enumerate(global_model):
             indexes = find_indices(model_idxs, i)
             if not indexes : continue
-            model_params_indexes = [model_params_cache[p] for p in indexes][0]
+            model_params_indexes = [model_params_cache[p][i] for p in indexes]
             aggregated_model_params = aggregate_model_params(model_params_indexes)
             deserialize_model_params(global_model[i], aggregated_model_params)
 

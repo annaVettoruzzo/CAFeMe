@@ -75,13 +75,25 @@ accuracy_fedavg_ft = evaluate_fl(fedavg_model, clients, clients_test, per_steps,
 print(f"Accuracy FedAvg-FT: {accuracy_fedavg_ft}")
 
 
-###################### TRAINING IFCA - model averaging ###########################
+###################### TRAINING IFCA - w/o weights sharing ###########################
 n_models = 3
 ifca_model = [SimpleCNNModule(num_classes).to(DEVICE) for _ in range(n_models)]
 clients = [IFCAClient(client_id, trainset, shards_part, ifca_model, loss_fn, lr_outer, batch_size)
            for client_id in range(num_clients)]
 # train
 ifca_model = train_ifca(ifca_model, clients, clients_training, num_clients_per_round, adapt_steps, global_steps)
+# test
+accuracy_ifca = evaluate_fl(ifca_model, clients, clients_test, fine_tuning=False, save=PATH / "acc_ifca")
+print(f"Accuracy IFCA: {accuracy_ifca}")
+
+
+###################### TRAINING IFCA - with weights sharing ###########################
+n_models = 3
+ifca_model = [SimpleCNNModule(num_classes).to(DEVICE) for _ in range(n_models)]
+clients = [IFCAClient(client_id, trainset, shards_part, ifca_model, loss_fn, lr_outer, batch_size)
+           for client_id in range(num_clients)]
+# train
+ifca_model = train_ifca(ifca_model, clients, clients_training, num_clients_per_round, adapt_steps, global_steps, weight_sharing=True)
 # test
 accuracy_ifca = evaluate_fl(ifca_model, clients, clients_test, fine_tuning=False, save=PATH / "acc_ifca")
 print(f"Accuracy IFCA: {accuracy_ifca}")
