@@ -3,7 +3,7 @@ import copy
 from collections import defaultdict, OrderedDict
 from fedlab.utils.dataset.sampler import SubsetSampler
 
-from utils import DEVICE, func_call, accuracy, serialize_model_params, evaluate_perfl
+from utils import DEVICE, func_call, accuracy, serialize_model_params
 
 
 class MultimodalFL_Client:

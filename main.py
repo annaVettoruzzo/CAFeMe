@@ -3,9 +3,9 @@ from torchvision import transforms
 import numpy as np
 import random
 from pathlib import Path
-from utils import DEVICE, train, evaluate_perfl, evaluate_fl
+from utils import DEVICE, train, train_ifca, evaluate_fl
 from modules import SimpleCNNModuleWithTE, SimpleCNNModule
-from methods import MultimodalFL_Client, PerFedAvg_Client, FedAvgClient
+from methods import MultimodalFL_Client, PerFedAvg_Client, FedAvgClient, IFCAClient
 from datasets import get_dataset, get_clients_id
 
 # For reproducibility
@@ -45,7 +45,7 @@ clients = [MultimodalFL_Client(client_id, trainset, shards_part, global_model, l
 global_model = train(global_model, clients, clients_training, num_clients_per_round, adapt_steps, global_steps)
 torch.save(global_model.state_dict(), PATH / "proposed_c1")
 # test
-accuracy_proposed = evaluate_perfl(global_model, clients, clients_test, per_steps, save=PATH / "acc_proposed_c1")
+accuracy_proposed = evaluate_fl(global_model, clients, clients_test, per_steps, save=PATH / "acc_proposed_c1")
 print(f"Accuracy proposed: {accuracy_proposed[-1]}")
 
 ########################### TRAINING PER-FEDAVG ###########################
@@ -56,7 +56,7 @@ clients = [PerFedAvg_Client(client_id, trainset, shards_part, perfedavg_model, l
 perfedavg_model = train(perfedavg_model, clients, clients_training, num_clients_per_round, adapt_steps, global_steps)
 torch.save(perfedavg_model.state_dict(), PATH / "per_fedavg")
 # test
-accuracy_perfedavg = evaluate_perfl(perfedavg_model, clients, clients_test, per_steps, save=PATH / "acc_perfedavg")
+accuracy_perfedavg = evaluate_fl(perfedavg_model, clients, clients_test, per_steps, save=PATH / "acc_perfedavg")
 print(f"Accuracy PerFedAvg: {accuracy_perfedavg[-1]}")
 
 ########################### TRAINING FEDAVG ###########################
@@ -67,5 +67,24 @@ clients = [FedAvgClient(client_id, trainset, shards_part, fedavg_model, loss_fn,
 fedavg_model = train(fedavg_model, clients, clients_training, num_clients_per_round, adapt_steps, global_steps)
 torch.save(fedavg_model.state_dict(), PATH / "fedavg")
 # test
-accuracy_fedavg = evaluate_fl(fedavg_model, clients, clients_test, save=PATH / "acc_fedavg")
+accuracy_fedavg = evaluate_fl(fedavg_model, clients, clients_test, fine_tuning=False, save=PATH / "acc_fedavg")
 print(f"Accuracy FedAvg: {accuracy_fedavg}")
+
+########################### TRAINING FEDAVG-FT ###########################
+accuracy_fedavg_ft = evaluate_fl(fedavg_model, clients, clients_test, per_steps, save=PATH / "acc_fedavg_ft")
+print(f"Accuracy FedAvg-FT: {accuracy_fedavg_ft}")
+
+
+###################### TRAINING IFCA - model averaging ###########################
+n_models = 3
+ifca_model = [SimpleCNNModule(num_classes).to(DEVICE) for _ in range(n_models)]
+clients = [IFCAClient(client_id, trainset, shards_part, ifca_model, loss_fn, lr_outer, batch_size)
+           for client_id in range(num_clients)]
+# train
+ifca_model = train_ifca(ifca_model, clients, clients_training, num_clients_per_round, adapt_steps, global_steps)
+# test
+accuracy_ifca = evaluate_fl(ifca_model, clients, clients_test, fine_tuning=False, save=PATH / "acc_ifca")
+print(f"Accuracy IFCA: {accuracy_ifca}")
+
+
+###################### TRAINING G-FML ###########################

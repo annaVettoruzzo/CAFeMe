@@ -16,6 +16,13 @@ DEVICE = torch.device('cuda') if torch.cuda.is_available() else torch.device('cp
 
 
 # -------------------------------------------------------------------
+def find_indices(list_to_check, item_to_find):
+    array = np.array(list_to_check)
+    indices = np.where(array == item_to_find)[0]
+    return list(indices)
+
+
+# -------------------------------------------------------------------
 class LambdaLayer(torch.nn.Module):
     def __init__(self, lambd):
         super(LambdaLayer, self).__init__()
@@ -68,10 +75,13 @@ def aggregate_model_params(params_list):
 
 
 # -------------------------------------------------------------------
-def evaluate_perfl(global_model, clients, clients_test, steps, save=""):
+def evaluate_fl(global_model, clients, clients_test, steps=100, fine_tuning=True, save=""):
     tot_acc = []
     for client_id in clients_test:
-        eval_acc = clients[client_id].perfl_eval(global_model, steps)
+        if fine_tuning:
+            eval_acc = clients[client_id].perfl_eval(global_model, steps)
+        else:
+            eval_acc = clients[client_id].fl_eval(global_model)
         tot_acc.append(eval_acc)
 
     avg_acc = np.mean(tot_acc, axis=0)
@@ -82,16 +92,3 @@ def evaluate_perfl(global_model, clients, clients_test, steps, save=""):
     return avg_acc
 
 
-# -------------------------------------------------------------------
-def evaluate_fl(global_model, clients, clients_test, save=""):
-    tot_acc = []
-    for client_id in clients_test:
-        eval_acc = clients[client_id].fl_eval(global_model)
-        tot_acc.append(eval_acc)
-
-    avg_acc = np.mean(tot_acc, axis=0)
-
-    if save:
-        with open(f'{save}.pkl', 'wb') as file:
-            pickle.dump(avg_acc, file)
-    return avg_acc
