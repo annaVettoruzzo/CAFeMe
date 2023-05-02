@@ -1,14 +1,17 @@
+import random
+
 import torch
 import copy
 from collections import defaultdict, OrderedDict
 from fedlab.utils.dataset.sampler import SubsetSampler
 
-from utils import DEVICE, func_call, accuracy, serialize_model_params
+from datasets import get_dataloader
+from utils import DEVICE, func_call, accuracy, serialize_model_params, evaluate_client
 
 
 class MultimodalFL_Client:
     def __init__(self, client_id, trainset, shards_part, global_model, loss_fn, lr_in, lr_out=0.001, batch_size=20):
-        self.trainloader = torch.utils.data.DataLoader(trainset, sampler=SubsetSampler(indices=shards_part[client_id], shuffle=True), batch_size=batch_size)
+        self.trainloader, self.valloader = get_dataloader(trainset, shards_part, client_id, batch_size, val_ratio=0.2)
         self.iter_trainloader = iter(self.trainloader)
 
         self.loss_fn = loss_fn
@@ -30,7 +33,7 @@ class MultimodalFL_Client:
         return x.to(self.device), y.to(self.device)
 
     # -------------------------------------------------------------------
-    def get_eval_data_batch(self, size_ratio=4):
+    def get_eval_data_batch(self, size_ratio=6):
         x_test, y_test = self.get_data_batch()
         for i in range(size_ratio - 1):
             x, y = self.get_data_batch()
@@ -82,11 +85,8 @@ class MultimodalFL_Client:
 
         test_acc = []
         for step in range(per_steps + 1):
-            x_eval, y_eval = self.get_eval_data_batch()
-            y_eval_pred = cmodel(x_eval)
-
             # Evaluate current model on the test data
-            acc = accuracy(y_eval_pred, y_eval)
+            acc = evaluate_client(cmodel, self.valloader)
             test_acc.append(acc)
 
             # Adapt the model using training data
@@ -103,7 +103,7 @@ class MultimodalFL_Client:
 
 class PerFedAvg_Client:
     def __init__(self, client_id, trainset, shards_part, global_model, loss_fn, lr_in, lr_out=0.001, batch_size=20):
-        self.trainloader = torch.utils.data.DataLoader(trainset, sampler=SubsetSampler(indices=shards_part[client_id], shuffle=True), batch_size=batch_size)
+        self.trainloader, self.valloader = get_dataloader(trainset, shards_part, client_id, batch_size, val_ratio=0.2)
         self.iter_trainloader = iter(self.trainloader)
 
         self.loss_fn = loss_fn
@@ -204,11 +204,7 @@ class PerFedAvg_Client:
 
         test_acc = []
         for step in range(per_steps + 1):
-            x_eval, y_eval = self.get_eval_data_batch()
-            y_eval_pred = cmodel(x_eval)
-
-            # Evaluate current model on the test data
-            acc = accuracy(y_eval_pred, y_eval)
+            acc = evaluate_client(cmodel, self.valloader)
             test_acc.append(acc)
 
             # Adapt the model using training data

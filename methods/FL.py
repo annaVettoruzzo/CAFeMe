@@ -3,12 +3,13 @@ import copy
 import numpy as np
 from fedlab.utils.dataset.sampler import SubsetSampler
 
-from utils import DEVICE, serialize_model_params, accuracy
+from datasets import get_dataloader
+from utils import DEVICE, serialize_model_params, accuracy, evaluate_client
 
 
 class FedAvgClient:
     def __init__(self, client_id, trainset, shards_part, global_model, loss_fn, lr, batch_size=20):
-        self.trainloader = torch.utils.data.DataLoader(trainset, sampler=SubsetSampler(indices=shards_part[client_id], shuffle=True), batch_size=batch_size)
+        self.trainloader, self.valloader = get_dataloader(trainset, shards_part, client_id, batch_size, val_ratio=0.2)
         self.iter_trainloader = iter(self.trainloader)
 
         self.loss_fn = loss_fn
@@ -58,16 +59,8 @@ class FedAvgClient:
 
     # -------------------------------------------------------------------
     def fl_eval(self, global_model):
-        tot_acc = []
-        for batch_idx, (images, labels) in enumerate(self.trainloader):
-            images, labels = images.to(self.device), labels.to(self.device)
-
-            # Inference
-            outputs = global_model(images)
-            eval_acc = accuracy(outputs, labels)
-            tot_acc.append(eval_acc)
-
-        return np.mean(tot_acc)
+        tot_acc = evaluate_client(global_model, self.valloader)
+        return tot_acc
 
     # -------------------------------------------------------------------
     def perfl_eval(self, global_model, per_steps):
@@ -78,11 +71,8 @@ class FedAvgClient:
 
         test_acc = []
         for step in range(per_steps + 1):
-            x_eval, y_eval = self.get_eval_data_batch()
-            y_eval_pred = cmodel(x_eval)
-
             # Evaluate current model on the test data
-            acc = accuracy(y_eval_pred, y_eval)
+            acc = evaluate_client(cmodel, self.valloader)
             test_acc.append(acc)
 
             # Adapt the model using training data
@@ -98,7 +88,7 @@ class FedAvgClient:
 
 class IFCAClient:
     def __init__(self, client_id, trainset, shards_part, global_model, loss_fn, lr, batch_size=20):
-        self.trainloader = torch.utils.data.DataLoader(trainset, sampler=SubsetSampler(indices=shards_part[client_id], shuffle=True), batch_size=batch_size)
+        self.trainloader, self.valloader = get_dataloader(trainset, shards_part, client_id, batch_size, val_ratio=0.2)
         self.iter_trainloader = iter(self.trainloader)
 
         self.loss_fn = loss_fn
@@ -153,13 +143,5 @@ class IFCAClient:
         best_model_idx = self.compute_best_model(global_model)
         best_model = global_model[best_model_idx]
 
-        tot_acc = []
-        for batch_idx, (images, labels) in enumerate(self.trainloader):
-            images, labels = images.to(self.device), labels.to(self.device)
-
-            # Inference
-            outputs = best_model(images)
-            eval_acc = accuracy(outputs, labels)
-            tot_acc.append(eval_acc)
-
-        return np.mean(tot_acc)
+        tot_acc = evaluate_client(best_model, self.valloader)
+        return tot_acc

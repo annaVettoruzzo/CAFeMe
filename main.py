@@ -1,8 +1,10 @@
 import torch
 from torchvision import transforms
 import numpy as np
+import pandas as pd
 import random
 from pathlib import Path
+import matplotlib.pyplot as plt
 from utils import DEVICE, train, train_ifca, evaluate_fl
 from modules import SimpleCNNModuleWithTE, SimpleCNNModule
 from methods import MultimodalFL_Client, PerFedAvg_Client, FedAvgClient, IFCAClient
@@ -82,6 +84,7 @@ clients = [IFCAClient(client_id, trainset, shards_part, ifca_model, loss_fn, lr_
            for client_id in range(num_clients)]
 # train
 ifca_model = train_ifca(ifca_model, clients, clients_training, num_clients_per_round, adapt_steps, global_steps)
+for i in range(len(ifca_model)): torch.save(ifca_model[i].state_dict(), PATH / f"ifca{i}")
 # test
 accuracy_ifca = evaluate_fl(ifca_model, clients, clients_test, fine_tuning=False, save=PATH / "acc_ifca")
 print(f"Accuracy IFCA: {accuracy_ifca}")
@@ -89,14 +92,32 @@ print(f"Accuracy IFCA: {accuracy_ifca}")
 
 ###################### TRAINING IFCA - with weights sharing ###########################
 n_models = 3
-ifca_model = [SimpleCNNModule(num_classes).to(DEVICE) for _ in range(n_models)]
-clients = [IFCAClient(client_id, trainset, shards_part, ifca_model, loss_fn, lr_outer, batch_size)
+ifca_sharing_model = [SimpleCNNModule(num_classes).to(DEVICE) for _ in range(n_models)]
+clients = [IFCAClient(client_id, trainset, shards_part, ifca_sharing_model, loss_fn, lr_outer, batch_size)
            for client_id in range(num_clients)]
 # train
-ifca_model = train_ifca(ifca_model, clients, clients_training, num_clients_per_round, adapt_steps, global_steps, weight_sharing=True)
+ifca_sharing_model = train_ifca(ifca_sharing_model, clients, clients_training, num_clients_per_round, adapt_steps, global_steps, weight_sharing=True)
+for i in range(len(ifca_sharing_model)): torch.save(ifca_sharing_model[i].state_dict(), PATH / f"ifca_sharing{i}")
 # test
-accuracy_ifca = evaluate_fl(ifca_model, clients, clients_test, fine_tuning=False, save=PATH / "acc_ifca")
-print(f"Accuracy IFCA: {accuracy_ifca}")
+accuracy_ifca_sharing = evaluate_fl(ifca_sharing_model, clients, clients_test, fine_tuning=False, save=PATH / "acc_ifca_sharinf")
+print(f"Accuracy IFCA sharing weights: {accuracy_ifca_sharing}")
 
 
 ###################### TRAINING G-FML ###########################
+
+###################### EVALUATE ###########################
+accuracy_fedavg = pd.read_pickle(PATH/"acc_fedavg.pkl")
+accuracy_fedavg_ft = pd.read_pickle(PATH/"acc_fedavg_ft.pkl")
+accuracy_perfedavg = pd.read_pickle(PATH/"acc_perfedavg.pkl")
+accuracy_ifca = pd.read_pickle(PATH/"acc_ifca.pkl")
+accuracy_ifca_sharing = pd.read_pickle(PATH/"acc_ifca_sharing.pkl")
+accuracy_proposed = pd.read_pickle(PATH/"acc_proposed_c1.pkl")
+
+plt.plot(accuracy_fedavg, label="fedavg")
+plt.plot(accuracy_fedavg_ft, label="fedavg-ft")
+plt.plot(accuracy_perfedavg, label="per-fedavg")
+plt.plot(accuracy_ifca, label="ifca")
+plt.plot(accuracy_ifca_sharing, label="ifca-sharing")
+plt.plot(accuracy_proposed, label="proposed")
+plt.legend()
+plt.show()

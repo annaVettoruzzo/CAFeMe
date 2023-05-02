@@ -68,10 +68,33 @@ def deserialize_model_params(model, params_list):
 
 
 # -------------------------------------------------------------------
+def deserialize_specific_model_params(model, params_list, name):
+    """ Copy parameters that contains name in params_list inside model """
+    current_index = 0  # keep track of where to read from grad_update
+    for param_name, parameter in model.named_parameters():
+        numel = parameter.data.numel()
+        size = parameter.data.size()
+        if name in param_name:
+            parameter.data.copy_(params_list[current_index:current_index + numel].view(size))
+        current_index += numel
+    return
+
+
+# -------------------------------------------------------------------
 def aggregate_model_params(params_list):
     """ As in FedAVg considering the same weight for all the clients """
     aggregate_parameters = torch.mean(torch.stack(params_list, dim=-1), dim=-1)
     return aggregate_parameters
+
+
+# -------------------------------------------------------------------
+def evaluate_client(model, dataloader):
+    tot_acc = []
+    for x, y in dataloader:
+        x, y = x.to(DEVICE), y.to(DEVICE)
+        logit = model(x)
+        tot_acc.append(accuracy(logit, y))
+    return np.mean(tot_acc)
 
 
 # -------------------------------------------------------------------
