@@ -8,8 +8,8 @@ from utils import DEVICE, serialize_model_params, accuracy, evaluate_client
 
 
 class FedAvgClient:
-    def __init__(self, client_id, trainset, shards_part, global_model, loss_fn, lr, batch_size=20):
-        self.trainloader, self.valloader = get_dataloader(trainset, shards_part, client_id, batch_size, val_ratio=0.2)
+    def __init__(self, dataset, client_id, global_model, trainset, client_split, loss_fn, lr, batch_size=20):
+        self.trainloader, self.valloader = get_dataloader(dataset, trainset, client_split, client_id, batch_size, val_ratio=0.2)
         self.iter_trainloader = iter(self.trainloader)
 
         self.loss_fn = loss_fn
@@ -28,15 +28,6 @@ class FedAvgClient:
             x, y = next(self.iter_trainloader)
 
         return x.to(self.device), y.to(self.device)
-
-    # -------------------------------------------------------------------
-    def get_eval_data_batch(self, size_ratio=4):
-        x_test, y_test = self.get_data_batch()
-        for i in range(size_ratio - 1):
-            x, y = self.get_data_batch()
-            x_test, y_test = torch.cat((x_test, x), dim=0), torch.cat((y_test, y), dim=0)
-
-        return x_test.to(self.device), y_test.to(self.device)
 
     # -------------------------------------------------------------------
     def fit(self, global_model, adapt_steps):
@@ -87,8 +78,8 @@ class FedAvgClient:
 
 
 class IFCAClient:
-    def __init__(self, client_id, trainset, shards_part, global_model, loss_fn, lr, batch_size=20):
-        self.trainloader, self.valloader = get_dataloader(trainset, shards_part, client_id, batch_size, val_ratio=0.2)
+    def __init__(self, dataset, client_id, global_model, trainset, client_split, loss_fn, lr, batch_size=20):
+        self.trainloader, self.valloader = get_dataloader(dataset, trainset, client_split, client_id, batch_size, val_ratio=0.2)
         self.iter_trainloader = iter(self.trainloader)
 
         self.loss_fn = loss_fn
@@ -97,6 +88,16 @@ class IFCAClient:
 
         self.local_model = [copy.deepcopy(model) for model in global_model] # this is a list of models
         self.local_optimizer = [torch.optim.SGD(model.parameters(), lr=self.lr) for model in self.local_model]
+
+    # -------------------------------------------------------------------
+    def get_data_batch(self):
+        try:
+            x, y = next(self.iter_trainloader)
+        except StopIteration:
+            self.iter_trainloader = iter(self.trainloader)
+            x, y = next(self.iter_trainloader)
+
+        return x.to(self.device), y.to(self.device)
 
     # -------------------------------------------------------------------
     def compute_best_model(self, model=None):
@@ -145,3 +146,29 @@ class IFCAClient:
 
         tot_acc = evaluate_client(best_model, self.valloader)
         return tot_acc
+
+    # -------------------------------------------------------------------
+    def perfl_eval(self, global_model, per_steps):
+        best_model_idx = self.compute_best_model(global_model)
+        best_model = global_model[best_model_idx]
+
+        # Copy the model to avoid adapting the original one
+        cmodel = copy.deepcopy(best_model)
+
+        optimizer = torch.optim.SGD(cmodel.parameters(), self.lr)
+
+        test_acc = []
+        for step in range(per_steps + 1):
+            # Evaluate current model on the test data
+            acc = evaluate_client(cmodel, self.valloader)
+            test_acc.append(acc)
+
+            # Adapt the model using training data
+            x, y = self.get_data_batch()
+            y_pred = cmodel(x)
+            loss = self.loss_fn(y_pred, y)
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+
+        return test_acc

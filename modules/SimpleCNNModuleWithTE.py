@@ -5,7 +5,7 @@ from utils.common import LambdaLayer
 
 # -------------------------------------------------------------------
 class TaskEncoderComplex(torch.nn.Module):
-    def __init__(self, out_shapes):
+    def __init__(self, conv_dim=[3, 64, 64, 64], flatten_dim=1024, out_shapes=None):
         super().__init__()
         out_dims = [np.prod(shape) for shape in out_shapes]
         out_dim = np.sum(out_dims)
@@ -14,13 +14,13 @@ class TaskEncoderComplex(torch.nn.Module):
             lst = x.split(out_dims)
             return [z.view(shape) for z, shape in zip(lst, out_shapes)]
 
-        self.cnn_block1 = self.cnn_block(3, 64)
-        self.cnn_block2 = self.cnn_block(64, 64)
-        self.cnn_block3 = self.cnn_block(64, 64)
+        self.cnn_block1 = self.cnn_block(conv_dim[0], conv_dim[1])
+        self.cnn_block2 = self.cnn_block(conv_dim[1], conv_dim[2])
+        self.cnn_block3 = self.cnn_block(conv_dim[2], conv_dim[3])
         self.flat = torch.nn.Flatten()
 
         self.net = torch.nn.Sequential(
-            torch.nn.Linear(1024, 100),
+            torch.nn.Linear(flatten_dim, 100),
             torch.nn.ReLU(),
             torch.nn.Linear(100, 100),
             torch.nn.ReLU(),
@@ -52,20 +52,21 @@ class TaskEncoderComplex(torch.nn.Module):
 
 # -------------------------------------------------------------------
 class SimpleCNNModuleWithTE(torch.nn.Module):
-    def __init__(self, n_classes, modulation):
+    def __init__(self, conv_dim=[3, 64, 64, 64], dense_dim=[1024, 576, 576], n_classes=10, modulation="c1"):
         super().__init__()
 
         self.modulation = modulation
-        if modulation in ["c0", "c1"]:   self.te = TaskEncoderComplex(out_shapes=[(1, 64, 1, 1), (1, 64, 1, 1), (1, 64, 1, 1), (1, 1024), (1, 576), (1, 576)])
-        elif modulation in ["c2"]:       self.te = TaskEncoderComplex(out_shapes=[(2, 64, 1, 1), (2, 64, 1, 1), (2, 64, 1, 1), (2, 1024), (2, 576), (2, 576)])
 
-        self.cnn_block1 = self.cnn_block(3, 64)
-        self.cnn_block2 = self.cnn_block(64, 64)
-        self.cnn_block3 = self.cnn_block(64, 64)
+        if modulation in ["c0", "c1"]:   self.te = TaskEncoderComplex(conv_dim, dense_dim[0], out_shapes=[(1, conv_dim[1], 1, 1), (1, conv_dim[2], 1, 1), (1, conv_dim[3], 1, 1), (1, dense_dim[0]), (1, dense_dim[1]), (1, dense_dim[2])])
+        elif modulation in ["c2"]:       self.te = TaskEncoderComplex(conv_dim, dense_dim[0], out_shapes=[(2, conv_dim[1], 1, 1), (2, conv_dim[2], 1, 1), (2, conv_dim[3], 1, 1), (2, dense_dim[0]), (2, dense_dim[1]), (2, dense_dim[2])])
+
+        self.cnn_block1 = self.cnn_block(conv_dim[0], conv_dim[1])
+        self.cnn_block2 = self.cnn_block(conv_dim[1], conv_dim[2])
+        self.cnn_block3 = self.cnn_block(conv_dim[2], conv_dim[3])
         self.flat = torch.nn.Flatten()
-        self.dense_block1 = self.dense_block(1024, 576)
-        self.dense_block2 = self.dense_block(576, 576)
-        self.lin = torch.nn.Linear(576, n_classes)
+        self.dense_block1 = self.dense_block(dense_dim[0], dense_dim[1])
+        self.dense_block2 = self.dense_block(dense_dim[1], dense_dim[2])
+        self.lin = torch.nn.Linear(dense_dim[2], n_classes)
 
     def cnn_block(self, in_channels, out_channels):
         return torch.nn.Sequential(
@@ -89,7 +90,6 @@ class SimpleCNNModuleWithTE(torch.nn.Module):
 
     def forward(self, x):
         r1, r2, r3, z0, z1, z2 = self.te(x)
-
         x = self.cnn_block1(x)
         x = self.modulate(x, r1)
 

@@ -23,6 +23,7 @@ def train(global_model, clients, clients_training, num_clients_per_round, adapt_
         if (step + 1) % 50 == 0:
             print(f"Step: {step + 1}, loss: {np.mean(client_avg_loss):.5f}", end="\t\r")
 
+
     return global_model
 
 

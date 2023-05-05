@@ -91,6 +91,7 @@ def aggregate_model_params(params_list):
 def evaluate_client(model, dataloader):
     tot_acc = []
     for x, y in dataloader:
+        if len(y) == 1: continue
         x, y = x.to(DEVICE), y.to(DEVICE)
         logit = model(x)
         tot_acc.append(accuracy(logit, y))

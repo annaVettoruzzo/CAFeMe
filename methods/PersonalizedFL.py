@@ -10,8 +10,8 @@ from utils import DEVICE, func_call, accuracy, serialize_model_params, evaluate_
 
 
 class MultimodalFL_Client:
-    def __init__(self, client_id, trainset, shards_part, global_model, loss_fn, lr_in, lr_out=0.001, batch_size=20):
-        self.trainloader, self.valloader = get_dataloader(trainset, shards_part, client_id, batch_size, val_ratio=0.2)
+    def __init__(self, dataset, client_id, global_model, trainset, client_split, loss_fn, lr_in, lr_out=0.001, batch_size=20):
+        self.trainloader, self.valloader = get_dataloader(dataset, trainset, client_split, client_id, batch_size, val_ratio=0.2)
         self.iter_trainloader = iter(self.trainloader)
 
         self.loss_fn = loss_fn
@@ -102,8 +102,8 @@ class MultimodalFL_Client:
 
 
 class PerFedAvg_Client:
-    def __init__(self, client_id, trainset, shards_part, global_model, loss_fn, lr_in, lr_out=0.001, batch_size=20):
-        self.trainloader, self.valloader = get_dataloader(trainset, shards_part, client_id, batch_size, val_ratio=0.2)
+    def __init__(self, dataset, client_id, global_model, trainset, client_split, loss_fn, lr_in, lr_out=0.001, batch_size=20):
+        self.trainloader, self.valloader = get_dataloader(dataset, trainset, client_split, client_id, batch_size, val_ratio=0.2)
         self.iter_trainloader = iter(self.trainloader)
 
         self.loss_fn = loss_fn
