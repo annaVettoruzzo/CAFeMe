@@ -1,16 +1,28 @@
 import torch
 from utils import DEVICE
+import argparse
+from modules import SimpleCNNModuleWithTE, SimpleCNNModule
 
 
-def set_args(dataset):
+def set_args():
     args_dict = {}
-    if dataset == "cifar10":
-        args_dict["dataset"] = dataset
+
+    # CMD line arguments
+    parser = argparse.ArgumentParser()
+    parser.add_argument('seed', type=int, help='Seed')
+    parser.add_argument('dataset', type=str, choices=["cifar10", "femnist"], help='Dataset')
+    parser.add_argument('partition', type=str, choices=["shards", "dirichlet", "unbalanced_iid"], default=None, help='Partition for cifar10')
+    args = parser.parse_args()
+
+    args_dict["dataset"] = args.dataset
+    args_dict["seed"] = args.seed
+    args_dict["partition"] = args.partition
+
+    if args_dict["dataset"] == "cifar10":
         args_dict["p_val"] = 0.8
         args_dict["num_clients"] = 100
         args_dict["num_classes"] = 10
         args_dict["batch_size"] = 50
-        args_dict["partition"] = "unbalanced_iid" #shards, dirichlet, #unbalanced_iid
         args_dict["num_clients_per_round"] = 5
 
         args_dict["lr_inner"] = 0.05
@@ -21,30 +33,26 @@ def set_args(dataset):
         args_dict["adapt_steps"] = 5  # Num of local training rounds
         args_dict["per_steps"] = 50  # Num of personalization steps
 
-        args_dict["conv_dim"] = [3, 64, 64, 64]
-        args_dict["dense_dim"] = [1024, 576, 576]
+        args_dict["model_proposed"] = SimpleCNNModuleWithTE(conv_dim=[3, 64, 64], dense_dim=[4096, 576], n_classes=62, modulation="c1")
+        args_dict["model"] = SimpleCNNModule(conv_dim=[3, 64, 64], dense_dim=[4096, 576], n_classes=62)
 
-    if dataset == "femnist":
-        args_dict["dataset"] = dataset
+    if args_dict["dataset"] == "femnist":
         args_dict["p_val"] = 0.8
         args_dict["num_clients"] = 200
         args_dict["num_classes"] = 62
         args_dict["batch_size"] = 50
-        args_dict["partition"] = None
         args_dict["num_clients_per_round"] = 5
 
         args_dict["lr_inner"] = 0.05
         args_dict["lr_outer"] = 0.001
         args_dict["loss_fn"] = torch.nn.CrossEntropyLoss().to(DEVICE)
 
-        args_dict["global_steps"] = 1000  # Num of communication rounds
+        args_dict["global_steps"] = 2000  # Num of communication rounds
         args_dict["adapt_steps"] = 5  # Num of local training rounds
         args_dict["per_steps"] = 50  # Num of personalization steps
 
-        args_dict["conv_dim"] = [1, 16, 16, 16]
-        args_dict["dense_dim"] = [144, 128, 128]
-
-
+        args_dict["model_proposed"] = SimpleCNNModuleWithTE(conv_dim=[1, 32, 64], dense_dim=[3136, 2048], n_classes=62, modulation="c1")
+        args_dict["model"] = SimpleCNNModule(conv_dim=[1, 32, 64], dense_dim=[3136, 2048], n_classes=62)
 
     return args_dict
 

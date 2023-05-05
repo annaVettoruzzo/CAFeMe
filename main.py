@@ -1,40 +1,36 @@
 import torch
 from torchvision import transforms
 import numpy as np
-import pandas as pd
 import random
 from pathlib import Path
-import matplotlib.pyplot as plt
 from utils import DEVICE, train, train_ifca, evaluate_fl
-from modules import SimpleCNNModuleWithTE, SimpleCNNModule
 from methods import MultimodalFL_Client, PerFedAvg_Client, FedAvgClient, IFCAClient
 from datasets import get_dataset, get_clients_id
 from arguments import set_args
 
+args = set_args()
+
 # For reproducibility
-seed = 0
+seed = args["seed"]
 torch.random.manual_seed(seed)
 np.random.seed(seed)
 random.seed(seed)
 
-dataset = "femnist" #cifar10, femnist
-args = set_args(dataset)
+dataset = args["dataset"] #cifar10, femnist
+partition = args["partition"]
 
 # For saving models
-if dataset == "cifar10":
-    partition = args["partition"]
-    PATH = Path(f"_saved_models/{dataset}/{partition}/seed{seed}")
-else:
-    PATH = Path(f"_saved_models/{dataset}/seed{seed}")
+if dataset == "cifar10": PATH = Path(f"_saved_models/{dataset}/{partition}/seed{seed}")
+else: PATH = Path(f"_saved_models/{dataset}/seed{seed}")
 PATH.mkdir(parents=True, exist_ok=True)
 print(PATH)
 
 ########################### DATASET ###########################
-trainset, client_split = get_dataset(args["dataset"], num_clients=args["num_clients"], transforms=transforms.ToTensor(), partition=args["partition"], seed=seed)
+trainset, client_split = get_dataset(args["dataset"], num_clients=args["num_clients"], transforms=transforms.ToTensor(), partition=partition, seed=seed)
 clients_training, clients_test = get_clients_id(args["num_classes"], args["p_val"])
 
 ########################### TRAINING PROPOSED ###########################
-global_model = SimpleCNNModuleWithTE(args["conv_dim"], args["dense_dim"], args["num_classes"], modulation="c1").to(DEVICE)
+global_model = args["model_proposed"].to(DEVICE)
 clients = [MultimodalFL_Client(args["dataset"], client_id, global_model, trainset, client_split, args["loss_fn"], args["lr_inner"], args["lr_outer"], args["batch_size"])
            for client_id in range(args["num_clients"])]
 # train
@@ -45,7 +41,7 @@ accuracy_proposed = evaluate_fl(global_model, clients, clients_test, args["per_s
 print(f"Accuracy proposed: {accuracy_proposed[-1]}")
 
 ########################### TRAINING PER-FEDAVG ###########################
-perfedavg_model = SimpleCNNModule(args["conv_dim"], args["dense_dim"], args["num_classes"]).to(DEVICE)
+perfedavg_model = args["model"].to(DEVICE)
 clients = [PerFedAvg_Client(args["dataset"], client_id, perfedavg_model, trainset, client_split, args["loss_fn"], args["lr_inner"], args["lr_outer"], args["batch_size"])
            for client_id in range(args["num_clients"])]
 # train
@@ -56,7 +52,7 @@ accuracy_perfedavg = evaluate_fl(perfedavg_model, clients, clients_test, args["p
 print(f"Accuracy PerFedAvg: {accuracy_perfedavg[-1]}")
 
 ########################### TRAINING FEDAVG ###########################
-fedavg_model = SimpleCNNModule(args["conv_dim"], args["dense_dim"], args["num_classes"]).to(DEVICE)
+fedavg_model = args["model"].to(DEVICE)
 clients = [FedAvgClient(args["dataset"], client_id, fedavg_model, trainset, client_split, args["loss_fn"], args["lr_outer"], args["batch_size"])
            for client_id in range(args["num_clients"])]
 # train
@@ -72,7 +68,7 @@ print(f"Accuracy FedAvg-FT: {accuracy_fedavg_ft[-1]}")
 
 ###################### TRAINING IFCA - w/o weights sharing ###########################
 n_models = 3
-ifca_model = [SimpleCNNModule(args["conv_dim"], args["dense_dim"], args["num_classes"]).to(DEVICE) for _ in range(n_models)]
+ifca_model = [args["model"].to(DEVICE) for _ in range(n_models)]
 clients = [IFCAClient(args["dataset"], client_id, ifca_model, trainset, client_split, args["loss_fn"], args["lr_outer"], args["batch_size"])
            for client_id in range(args["num_clients"])]
 # train
@@ -88,7 +84,7 @@ print(f"Accuracy IFCA-FT: {accuracy_ifca_ft[-1]}")
 
 ###################### TRAINING IFCA - with weights sharing ###########################
 n_models = 3
-ifca_sharing_model = [SimpleCNNModule(args["conv_dim"], args["dense_dim"], args["num_classes"]).to(DEVICE) for _ in range(n_models)]
+ifca_sharing_model = [args["model"].to(DEVICE) for _ in range(n_models)]
 clients = [IFCAClient(args["dataset"], client_id, ifca_model, trainset, client_split, args["loss_fn"], args["lr_outer"], args["batch_size"])
            for client_id in range(args["num_clients"])]
 # train
