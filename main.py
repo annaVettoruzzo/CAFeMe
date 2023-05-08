@@ -16,7 +16,7 @@ torch.random.manual_seed(seed)
 np.random.seed(seed)
 random.seed(seed)
 
-dataset = args["dataset"] #cifar10, femnist
+dataset = args["dataset"] #rmnist, cifar10, femnist
 partition = args["partition"]
 
 # For saving models
@@ -27,7 +27,7 @@ print(PATH)
 
 ########################### DATASET ###########################
 trainset, client_split = get_dataset(args["dataset"], num_clients=args["num_clients"], transforms=transforms.ToTensor(), partition=partition, seed=seed)
-clients_training, clients_test = get_clients_id(args["num_classes"], args["p_val"])
+clients_training, clients_test = get_clients_id(args["num_clients"], args["p_val"])
 
 ########################### TRAINING PROPOSED ###########################
 global_model = args["model_proposed"].to(DEVICE)

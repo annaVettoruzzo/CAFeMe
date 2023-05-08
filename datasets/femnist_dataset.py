@@ -14,42 +14,25 @@ class FEMNIST(Dataset):
     "LEAF: A Benchmark for Federated Settings" https://arxiv.org/abs/1812.01097.
     """
 
-    def __init__(self, train=True, transform=None, target_transform=None, ):
+    def __init__(self):
         super(FEMNIST, self).__init__()
-        self.transform = transform
-        self.target_transform = target_transform
-        self.train = train
 
-        train_clients, train_groups, train_data_temp, test_data_temp = read_data("./data/femnist/data/train",
-                                                                                 "./data/femnist/data/test")
-        if self.train:
-            self.dic_users = {}
-            train_data_x = []
-            train_data_y = []
-            for i in range(len(train_clients)):
-                # if i == 100:
-                #     break
-                self.dic_users[i] = set()
-                l = len(train_data_x)
-                cur_x = train_data_temp[train_clients[i]]['x']
-                cur_y = train_data_temp[train_clients[i]]['y']
-                for j in range(len(cur_x)):
-                    self.dic_users[i].add(j + l)
-                    train_data_x.append(np.array(cur_x[j]).reshape(28, 28))
-                    train_data_y.append(cur_y[j])
-            self.data = train_data_x
-            self.label = train_data_y
-        else:
-            test_data_x = []
-            test_data_y = []
-            for i in range(len(train_clients)):
-                cur_x = test_data_temp[train_clients[i]]['x']
-                cur_y = test_data_temp[train_clients[i]]['y']
-                for j in range(len(cur_x)):
-                    test_data_x.append(np.array(cur_x[j]).reshape(28, 28))
-                    test_data_y.append(cur_y[j])
-            self.data = test_data_x
-            self.label = test_data_y
+        train_clients, train_groups, train_data_temp = read_data("./data/femnist/data/train")
+
+        self.dic_users = {}
+        train_data_x = []
+        train_data_y = []
+        for i in range(len(train_clients)):
+            self.dic_users[i] = set()
+            l = len(train_data_x)
+            cur_x = train_data_temp[train_clients[i]]['x']
+            cur_y = train_data_temp[train_clients[i]]['y']
+            for j in range(len(cur_x)):
+                self.dic_users[i].add(j + l)
+                train_data_x.append(np.array(cur_x[j]).reshape(28, 28))
+                train_data_y.append(cur_y[j])
+        self.data = train_data_x
+        self.label = train_data_y
 
     def __getitem__(self, index):
         img, target = self.data[index], self.label[index]
@@ -60,10 +43,7 @@ class FEMNIST(Dataset):
         return len(self.data)
 
     def get_client_dic(self):
-        if self.train:
-            return self.dic_users
-        else:
-            exit("The test dataset do not have dic_users!")
+        return self.dic_users
 
 
 class DatasetSplit(Dataset):
@@ -99,7 +79,7 @@ def read_dir(data_dir):
     return clients, groups, data
 
 
-def read_data(train_data_dir, test_data_dir):
+def read_data(train_data_dir):
     '''
     parses data in given train and test data directories
     assumes:
@@ -113,9 +93,6 @@ def read_data(train_data_dir, test_data_dir):
         test_data: dictionary of test data
     '''
     train_clients, train_groups, train_data = read_dir(train_data_dir)
-    test_clients, test_groups, test_data = read_dir(test_data_dir)
 
-    assert train_clients == test_clients
-    assert train_groups == test_groups
 
-    return train_clients, train_groups, train_data, test_data
+    return train_clients, train_groups, train_data
