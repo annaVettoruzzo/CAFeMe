@@ -46,20 +46,28 @@ class TaskEncoder(torch.nn.Module):
 
 # -------------------------------------------------------------------
 class SimpleFNNModuleWithTE(torch.nn.Module):
-    def __init__(self, dense_dim=[784, 200, 200], n_classes=10, modulation="c1"):
+    def __init__(self, conv_dim=[1, 16], dense_dim=[3136, 200], n_classes=10, modulation="c1"):
         super().__init__()
 
         self.modulation = modulation
 
         if modulation in ["c0", "c1"]:
-            self.te = TaskEncoder(out_shapes=[(1, dense_dim[1]), (1, dense_dim[2])])
+            self.te = TaskEncoder(out_shapes=[(1, conv_dim[1], 1, 1), (1, dense_dim[0]), (1, dense_dim[1])])
         elif modulation in ["c2"]:
-            self.te = TaskEncoder(out_shapes=[(1, dense_dim[1]), (1, dense_dim[2])])
+            self.te = TaskEncoder(out_shapes=[(2, conv_dim[1], 1, 1), (2, dense_dim[0]), (2, dense_dim[1])])
 
+        self.cnn_block1 = self.cnn_block(conv_dim[0], conv_dim[1])
         self.flat = torch.nn.Flatten()
         self.dense_block1 = self.dense_block(dense_dim[0], dense_dim[1])
-        self.dense_block2 = self.dense_block(dense_dim[1], dense_dim[2])
-        self.lin = torch.nn.Linear(dense_dim[2], n_classes)
+        self.lin = torch.nn.Linear(dense_dim[1], n_classes)
+
+    def cnn_block(self, in_channels, out_channels):
+        return torch.nn.Sequential(
+            torch.nn.Conv2d(in_channels, out_channels, 3, padding="same"),
+            torch.nn.BatchNorm2d(out_channels, track_running_stats=False),
+            torch.nn.ReLU(),
+            torch.nn.MaxPool2d(2, 2),
+        )
 
     def dense_block(self, dim_in, dim_out):
         return torch.nn.Sequential(
@@ -74,14 +82,16 @@ class SimpleFNNModuleWithTE(torch.nn.Module):
         elif self.modulation in ["c2"]: return x * z[0] + z[1]
 
     def forward(self, x):
-        z1, z2 = self.te(x)
+        r1, z0, z1 = self.te(x)
+
+        x = self.cnn_block1(x)
+        x = self.modulate(x, r1)
 
         x = self.flat(x)
+        x = self.modulate(x, z0)
+
         x = self.dense_block1(x)
         x = self.modulate(x, z1)
-
-        x = self.dense_block2(x)
-        x = self.modulate(x, z2)
 
         x = self.lin(x)
         return x
