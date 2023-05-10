@@ -6,7 +6,7 @@ from modules import SimpleCNNModuleWithTE, SimpleCNNModule, SimpleFNNModuleWithT
 
 def set_args():
     args_dict = {}
-
+    """
     # CMD line arguments
     parser = argparse.ArgumentParser()
     parser.add_argument('seed', type=int, help='Seed')
@@ -18,10 +18,10 @@ def set_args():
     args_dict["seed"] = args.seed
     args_dict["partition"] = args.partition
     """
-    args_dict["dataset"] = "rmnist"
+    args_dict["dataset"] = "femnist"
     args_dict["seed"] = 0
     args_dict["partition"] = None
-    """
+
     if args_dict["dataset"] == "cifar10":
         args_dict["p_val"] = 0.8
         args_dict["num_clients"] = 100
@@ -73,8 +73,8 @@ def set_args():
         args_dict["adapt_steps"] = 5  # Num of local training rounds
         args_dict["per_steps"] = 50  # Num of personalization steps
 
-        args_dict["model_proposed"] = SimpleFNNModuleWithTE(conv_dim=[1, 16], dense_dim=[3136, 200], n_classes=10, modulation="c1")
-        args_dict["model"] = SimpleFNNModule(conv_dim=[1, 16], dense_dim=[3136, 200], n_classes=10)
+        args_dict["model_proposed"] = SimpleFNNModuleWithTE(conv_dim=[1, 32, 64], dense_dim=[1024, 512], n_classes=10, modulation="c1")
+        args_dict["model"] = SimpleFNNModule(conv_dim=[1, 32, 64], dense_dim=[1024, 512], n_classes=10)
 
     return args_dict
 
