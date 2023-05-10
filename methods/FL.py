@@ -8,12 +8,13 @@ from utils import DEVICE, serialize_model_params, accuracy, evaluate_client
 
 
 class FedAvgClient:
-    def __init__(self, dataset, client_id, global_model, trainset, client_split, loss_fn, lr, batch_size=20):
+    def __init__(self, dataset, client_id, global_model, trainset, client_split, loss_fn, lr, batch_size=20, lr_ft=0.05):
         self.trainloader, self.valloader = get_dataloader(dataset, trainset, client_split, client_id, batch_size, val_ratio=0.2)
         self.iter_trainloader = iter(self.trainloader)
 
         self.loss_fn = loss_fn
         self.lr = lr
+        self.lr_ft = lr_ft
         self.device = DEVICE
 
         self.local_model = copy.deepcopy(global_model)
@@ -58,7 +59,7 @@ class FedAvgClient:
         # Copy the model to avoid adapting the original one
         cmodel = copy.deepcopy(global_model)
 
-        optimizer = torch.optim.SGD(cmodel.parameters(), self.lr)
+        optimizer = torch.optim.SGD(cmodel.parameters(), self.lr_ft)
 
         test_acc = []
         for step in range(per_steps + 1):
@@ -78,12 +79,13 @@ class FedAvgClient:
 
 
 class IFCAClient:
-    def __init__(self, dataset, client_id, global_model, trainset, client_split, loss_fn, lr, batch_size=20):
+    def __init__(self, dataset, client_id, global_model, trainset, client_split, loss_fn, lr, batch_size=20, lr_ft=0.05):
         self.trainloader, self.valloader = get_dataloader(dataset, trainset, client_split, client_id, batch_size, val_ratio=0.2)
         self.iter_trainloader = iter(self.trainloader)
 
         self.loss_fn = loss_fn
         self.lr = lr
+        self.lr_ft = lr_ft
         self.device = DEVICE
 
         self.local_model = [copy.deepcopy(model) for model in global_model] # this is a list of models
@@ -155,7 +157,7 @@ class IFCAClient:
         # Copy the model to avoid adapting the original one
         cmodel = copy.deepcopy(best_model)
 
-        optimizer = torch.optim.SGD(cmodel.parameters(), self.lr)
+        optimizer = torch.optim.SGD(cmodel.parameters(), self.lr_ft)
 
         test_acc = []
         for step in range(per_steps + 1):

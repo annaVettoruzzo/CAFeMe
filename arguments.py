@@ -18,8 +18,8 @@ def set_args():
     args_dict["seed"] = args.seed
     args_dict["partition"] = args.partition
     """
-    args_dict["dataset"] = "femnist"
-    args_dict["seed"] = 0
+    args_dict["dataset"] = "rmnist"
+    args_dict["seed"] = 2
     args_dict["partition"] = None
 
     if args_dict["dataset"] == "cifar10":
@@ -51,12 +51,15 @@ def set_args():
         args_dict["lr_outer"] = 0.001
         args_dict["loss_fn"] = torch.nn.CrossEntropyLoss().to(DEVICE)
 
-        args_dict["global_steps"] = 2000  # Num of communication rounds
+        args_dict["global_steps"] = 1000#2000  # Num of communication rounds
         args_dict["adapt_steps"] = 5  # Num of local training rounds
         args_dict["per_steps"] = 50  # Num of personalization steps
 
-        args_dict["model_proposed"] = SimpleCNNModuleWithTE(conv_dim=[1, 64, 64, 64], dense_dim=[576, 576, 576], n_classes=62, modulation="c1")
-        args_dict["model"] = SimpleCNNModule(conv_dim=[1, 64, 64, 64], dense_dim=[576, 576, 576], n_classes=62)
+        args_dict["model_proposed"] = SimpleFNNModuleWithTE(conv_dim=[1, 32, 64], dense_dim=[1024, 512], n_classes=62, modulation="c1")
+        args_dict["model"] = SimpleFNNModule(conv_dim=[1, 32, 64], dense_dim=[1024, 512], n_classes=62)
+
+        #args_dict["model_proposed"] = SimpleCNNModuleWithTE(conv_dim=[1, 64, 64, 64], dense_dim=[576, 576, 576], n_classes=62, modulation="c1")
+        #args_dict["model"] = SimpleCNNModule(conv_dim=[1, 64, 64, 64], dense_dim=[576, 576, 576], n_classes=62)
 
     if args_dict["dataset"] == "rmnist":
         args_dict["p_val"] = 0.8
