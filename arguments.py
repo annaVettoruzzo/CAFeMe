@@ -19,7 +19,7 @@ def set_args():
     args_dict["partition"] = args.partition
     """
     args_dict["dataset"] = "rmnist"
-    args_dict["seed"] = 0
+    args_dict["seed"] = 4
     args_dict["partition"] = "dirichlet"
 
     if args_dict["dataset"] == "cifar10":
@@ -31,6 +31,7 @@ def set_args():
 
         args_dict["lr_inner"] = 0.05
         args_dict["lr_outer"] = 0.001
+        args_dict["lr_ft_pfl"] = 0.05
         args_dict["lr_ft"] = 0.01
         args_dict["loss_fn"] = torch.nn.CrossEntropyLoss().to(DEVICE)
 
@@ -50,6 +51,7 @@ def set_args():
 
         args_dict["lr_inner"] = 0.05
         args_dict["lr_outer"] = 0.001
+        args_dict["lr_ft_pfl"] = 0.05
         args_dict["lr_ft"] = 0.01
         args_dict["loss_fn"] = torch.nn.CrossEntropyLoss().to(DEVICE)
 
@@ -64,6 +66,7 @@ def set_args():
         #args_dict["model"] = SimpleCNNModule(conv_dim=[1, 64, 64, 64], dense_dim=[576, 576, 576], n_classes=62)
 
     if args_dict["dataset"] == "rmnist":
+        args_dict["newrotation"] = True  # True if at test time we want to use clients with different degrees rotations
         args_dict["p_val"] = 0.8
         args_dict["num_clients"] = 100
         args_dict["num_classes"] = 10
@@ -72,7 +75,8 @@ def set_args():
 
         args_dict["lr_inner"] = 0.05
         args_dict["lr_outer"] = 0.001
-        args_dict["lr_ft"] = 0.01
+        args_dict["lr_ft_pfl"] = 0.01  # used for personalization with proposed approach
+        args_dict["lr_ft"] = 0.001
         args_dict["loss_fn"] = torch.nn.CrossEntropyLoss().to(DEVICE)
 
         args_dict["global_steps"] = 1000  # Num of communication rounds

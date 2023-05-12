@@ -10,7 +10,7 @@ from torch.utils.data import Dataset
 from fedlab.utils.dataset.partition import CIFAR10Partitioner
 from fedlab.utils.dataset.sampler import SubsetSampler
 from .femnist_dataset import FEMNIST
-from .rmnist_dataset import RotatedMNIST
+from .rmnist_dataset import RotatedMNIST, RotatedMNISTNewRotation
 
 
 # -------------------------------------------------------------------
@@ -28,7 +28,10 @@ def get_dataset(dataset, num_clients=100, transforms=tr.ToTensor(), partition=No
         tmp_client_split = random.sample(list(all_client_split.items()), k=num_clients)
         client_split = dict((i, y) for i, (x, y) in enumerate(tmp_client_split))
     elif dataset == "rmnist":
-        trainset = RotatedMNIST()
+        trainset = RotatedMNIST(num_clients)
+        client_split = trainset.get_client_dic()
+    elif dataset == "rmnist_newrotation":
+        trainset = RotatedMNISTNewRotation(num_clients)
         client_split = trainset.get_client_dic()
     return trainset, client_split
 
