@@ -1,7 +1,12 @@
 import random
 import torch
+import os
+from glob import glob
+from tfrecord.torch.dataset import TFRecordDataset
+from cv2 import imdecode
 import torchvision
 import torchvision.transforms as tr
+from torch.utils.data import Dataset
 from fedlab.utils.dataset.partition import CIFAR10Partitioner
 from fedlab.utils.dataset.sampler import SubsetSampler
 from .femnist_dataset import FEMNIST
@@ -44,3 +49,34 @@ def get_dataloader(dataset, trainset, client_split, client_id, batch_size, val_r
     trainloader = torch.utils.data.DataLoader(trainset, sampler=SubsetSampler(indices=train_indexes, shuffle=True), batch_size=batch_size, drop_last=True)
     valloader = torch.utils.data.DataLoader(trainset, sampler=SubsetSampler(indices=val_indexes, shuffle=True), batch_size=batch_size)
     return trainloader, valloader
+
+
+# -------------------------------------------------------------------
+def load_tfrecord_images(fpath):
+    dataset = TFRecordDataset(fpath, None, {"image": "byte", "label": "int"})
+    dataset = list(dataset)
+    label = dataset[0]["label"][0]
+    images = [imdecode(dico["image"], -1) for dico in dataset]
+    return images, label
+
+
+# -------------------------------------------------------------------
+class BaseDataset:
+    def __init__(self, folder, transforms=tr.Compose([])):
+        # List all the tfrecords filenames
+        fnames = glob(os.path.join(folder, "*.tfrecords"))
+
+        # Group images by their class
+        self.data, self.labels = [], []
+        for fname in fnames:
+            images, c = load_tfrecord_images(fname)
+            images = [transforms(img).numpy() for img in images]
+            self.data += images
+            self.labels += [c for _ in range(len(images))]
+
+    def __getitem__(self, index):
+        img, target = self.data[index], self.labels[index]
+        return img, target
+
+    def __len__(self):
+        return len(self.data)

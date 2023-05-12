@@ -8,7 +8,7 @@ from utils import DEVICE, serialize_model_params, accuracy, evaluate_client
 
 
 class FedAvgClient:
-    def __init__(self, dataset, client_id, global_model, trainset, client_split, loss_fn, lr, batch_size=20, lr_ft=0.05):
+    def __init__(self, dataset, client_id, global_model, trainset, client_split, loss_fn, lr, batch_size=20, lr_ft=0.01):
         self.trainloader, self.valloader = get_dataloader(dataset, trainset, client_split, client_id, batch_size, val_ratio=0.2)
         self.iter_trainloader = iter(self.trainloader)
 
@@ -60,6 +60,7 @@ class FedAvgClient:
         cmodel = copy.deepcopy(global_model)
 
         optimizer = torch.optim.SGD(cmodel.parameters(), self.lr_ft)
+        scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.8)
 
         test_acc = []
         for step in range(per_steps + 1):
@@ -75,11 +76,14 @@ class FedAvgClient:
             loss.backward()
             optimizer.step()
 
+            if (step + 1) % 5 == 0:
+                scheduler.step()
+
         return test_acc
 
 
 class IFCAClient:
-    def __init__(self, dataset, client_id, global_model, trainset, client_split, loss_fn, lr, batch_size=20, lr_ft=0.05):
+    def __init__(self, dataset, client_id, global_model, trainset, client_split, loss_fn, lr, batch_size=20, lr_ft=0.01):
         self.trainloader, self.valloader = get_dataloader(dataset, trainset, client_split, client_id, batch_size, val_ratio=0.2)
         self.iter_trainloader = iter(self.trainloader)
 
@@ -158,6 +162,7 @@ class IFCAClient:
         cmodel = copy.deepcopy(best_model)
 
         optimizer = torch.optim.SGD(cmodel.parameters(), self.lr_ft)
+        scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.8)
 
         test_acc = []
         for step in range(per_steps + 1):
@@ -172,5 +177,8 @@ class IFCAClient:
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
+
+            if (step + 1) % 5 == 0:
+                scheduler.step()
 
         return test_acc

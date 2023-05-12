@@ -5,8 +5,6 @@ import pickle
 from .stateless import functional_call
 from sklearn.metrics import accuracy_score
 
-IMAGE_SIZE = 32
-
 # -------------------------------------------------------------------
 os.system('nvidia-smi -q -d Memory |grep -A6 GPU|grep Free >tmp')
 memory_available = [int(x.split()[2]) for x in open('tmp', 'r').readlines()]

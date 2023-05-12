@@ -19,8 +19,8 @@ def set_args():
     args_dict["partition"] = args.partition
     """
     args_dict["dataset"] = "rmnist"
-    args_dict["seed"] = 2
-    args_dict["partition"] = None
+    args_dict["seed"] = 0
+    args_dict["partition"] = "dirichlet"
 
     if args_dict["dataset"] == "cifar10":
         args_dict["p_val"] = 0.8
@@ -31,6 +31,7 @@ def set_args():
 
         args_dict["lr_inner"] = 0.05
         args_dict["lr_outer"] = 0.001
+        args_dict["lr_ft"] = 0.01
         args_dict["loss_fn"] = torch.nn.CrossEntropyLoss().to(DEVICE)
 
         args_dict["global_steps"] = 1000  # Num of communication rounds
@@ -49,6 +50,7 @@ def set_args():
 
         args_dict["lr_inner"] = 0.05
         args_dict["lr_outer"] = 0.001
+        args_dict["lr_ft"] = 0.01
         args_dict["loss_fn"] = torch.nn.CrossEntropyLoss().to(DEVICE)
 
         args_dict["global_steps"] = 1000#2000  # Num of communication rounds
@@ -70,6 +72,7 @@ def set_args():
 
         args_dict["lr_inner"] = 0.05
         args_dict["lr_outer"] = 0.001
+        args_dict["lr_ft"] = 0.01
         args_dict["loss_fn"] = torch.nn.CrossEntropyLoss().to(DEVICE)
 
         args_dict["global_steps"] = 1000  # Num of communication rounds
