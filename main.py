@@ -63,9 +63,15 @@ clients = [FedAvgClient(args["dataset"], client_id, fedavg_model, trainset, clie
 fedavg_model = train(fedavg_model, clients, clients_training, args["num_clients_per_round"], args["adapt_steps"], args["global_steps"])
 torch.save(fedavg_model.state_dict(), PATH / "fedavg")
 #fedavg_model.load_state_dict(torch.load(f"_saved_models/{dataset}/seed{seed}/fedavg"))
+
 # test
 accuracy_fedavg = evaluate_fl(fedavg_model, clients, clients_test, fine_tuning=False, save=PATH / "acc_fedavg")
 print(f"Accuracy FedAvg: {accuracy_fedavg}")
+
+# (set only_fe=True if aggregate only feature extractor)
+#fedavg_model = train(fedavg_model, clients, clients_training, args["num_clients_per_round"], args["adapt_steps"], args["global_steps"], only_fe=True)
+#torch.save(fedavg_model.state_dict(), PATH / "fedavg_only_fe")
+#accuracy_fedavg = evaluate_fl(fedavg_model, clients, clients_test, fine_tuning=True, only_fe=True, save=PATH / "acc_fedavg_only_fe")
 
 ########################### TRAINING FEDAVG-FT ###########################
 accuracy_fedavg_ft = evaluate_fl(fedavg_model, clients, clients_test, args["per_steps"], save=PATH / "acc_fedavg_ft")

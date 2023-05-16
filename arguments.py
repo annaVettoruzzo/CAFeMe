@@ -19,7 +19,7 @@ def set_args():
     args_dict["partition"] = args.partition
     """
     args_dict["dataset"] = "meta_dataset"
-    args_dict["seed"] = 4
+    args_dict["seed"] = 0
     args_dict["partition"] = "dirichlet"
 
     if args_dict["dataset"] == "cifar10":

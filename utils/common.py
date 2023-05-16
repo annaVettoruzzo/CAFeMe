@@ -97,6 +97,16 @@ def aggregate_model_params(params_list):
 
 
 # -------------------------------------------------------------------
+def reset_weights(model, name_layer):
+    for name, layer in model.named_children():
+        if name==name_layer:
+            for n, l in layer.named_modules():
+                if hasattr(l, 'reset_parameters'):
+                    l.reset_parameters()
+    return
+
+
+# -------------------------------------------------------------------
 def evaluate_client(model, dataloader):
     tot_acc = []
     for x, y in dataloader:
@@ -108,11 +118,11 @@ def evaluate_client(model, dataloader):
 
 
 # -------------------------------------------------------------------
-def evaluate_fl(global_model, clients, clients_test, steps=100, fine_tuning=True, save=""):
+def evaluate_fl(global_model, clients, clients_test, steps=100, fine_tuning=True, only_fe=False, save=""):
     tot_acc = []
     for client_id in clients_test:
         if fine_tuning:
-            eval_acc = clients[client_id].perfl_eval(global_model, steps)
+            eval_acc = clients[client_id].perfl_eval(global_model, steps, only_fe)
         else:
             eval_acc = clients[client_id].fl_eval(global_model)
         tot_acc.append(eval_acc)

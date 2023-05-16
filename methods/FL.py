@@ -55,11 +55,13 @@ class FedAvgClient:
         return tot_acc
 
     # -------------------------------------------------------------------
-    def perfl_eval(self, global_model, per_steps):
+    def perfl_eval(self, global_model, per_steps, only_fe=False):
         # Copy the model to avoid adapting the original one
         cmodel = copy.deepcopy(global_model)
 
-        optimizer = torch.optim.SGD(cmodel.parameters(), self.lr_ft)
+        if only_fe: optimizer = torch.optim.SGD(cmodel.lin.parameters(), self.lr_ft)
+        else: optimizer = torch.optim.SGD(cmodel.parameters(), self.lr_ft)
+
         scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.8)
 
         test_acc = []
