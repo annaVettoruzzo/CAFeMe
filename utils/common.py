@@ -2,6 +2,8 @@ import torch
 import os
 import numpy as np
 import pickle
+from tfrecord.torch.dataset import TFRecordDataset
+from cv2 import imdecode
 from .stateless import functional_call
 from sklearn.metrics import accuracy_score
 
@@ -11,6 +13,15 @@ memory_available = [int(x.split()[2]) for x in open('tmp', 'r').readlines()]
 gpu_number = int(np.argmax(memory_available))
 torch.cuda.set_device(gpu_number)
 DEVICE = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
+
+
+# -------------------------------------------------------------------
+def load_tfrecord_images(fpath):
+    dataset = TFRecordDataset(fpath, None, {"image": "byte", "label": "int"})
+    dataset = list(dataset)
+    label = dataset[0]["label"][0]
+    images = [imdecode(dico["image"], -1) for dico in dataset]
+    return images, label
 
 
 # -------------------------------------------------------------------

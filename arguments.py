@@ -18,7 +18,7 @@ def set_args():
     args_dict["seed"] = args.seed
     args_dict["partition"] = args.partition
     """
-    args_dict["dataset"] = "rmnist"
+    args_dict["dataset"] = "meta_dataset"
     args_dict["seed"] = 4
     args_dict["partition"] = "dirichlet"
 
@@ -85,6 +85,28 @@ def set_args():
 
         args_dict["model_proposed"] = SimpleFNNModuleWithTE(conv_dim=[1, 32, 64], dense_dim=[1024, 512], n_classes=10, modulation="c1")
         args_dict["model"] = SimpleFNNModule(conv_dim=[1, 32, 64], dense_dim=[1024, 512], n_classes=10)
+
+    if args_dict["dataset"] == "meta_dataset":
+        args_dict["datasets"] = ["aircraft", "cu_birds", "dtd", "traffic_sign", "vgg_flower"]
+        args_dict["p_val"] = 0.8
+        args_dict["num_clients"] = 100
+        args_dict["num_data"] = 600
+        args_dict["num_classes"] = 10
+        args_dict["batch_size"] = 30
+        args_dict["num_clients_per_round"] = 5
+
+        args_dict["lr_inner"] = 0.05
+        args_dict["lr_outer"] = 0.001
+        args_dict["lr_ft_pfl"] = 0.05
+        args_dict["lr_ft"] = 0.01
+        args_dict["loss_fn"] = torch.nn.CrossEntropyLoss().to(DEVICE)
+
+        args_dict["global_steps"] = 2000  # Num of communication rounds
+        args_dict["adapt_steps"] = 5  # Num of local training rounds
+        args_dict["per_steps"] = 50  # Num of personalization steps
+
+        args_dict["model_proposed"] = SimpleCNNModuleWithTE(conv_dim=[3, 64, 64, 64], dense_dim=[1024, 576, 576], n_classes=args_dict["num_classes"], modulation="c1")
+        args_dict["model"] = SimpleCNNModule(conv_dim=[3, 64, 64, 64], dense_dim=[1024, 576, 576], n_classes=args_dict["num_classes"])
 
     return args_dict
 

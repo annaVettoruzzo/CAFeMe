@@ -26,7 +26,7 @@ PATH.mkdir(parents=True, exist_ok=True)
 print(PATH)
 
 ########################### DATASET ###########################
-trainset, client_split = get_dataset(dataset, num_clients=args["num_clients"], transforms=transforms.ToTensor(), partition=partition, seed=seed)
+trainset, client_split = get_dataset(args, transforms=transforms.ToTensor())
 clients_training, clients_test = get_clients_id(args["num_clients"], args["p_val"])
 
 ########################### TRAINING PROPOSED ###########################
@@ -35,24 +35,24 @@ clients = [MultimodalFL_Client(args["dataset"], client_id, global_model, trainse
            for client_id in range(args["num_clients"])]
 
 # train
-#global_model = train(global_model, clients, clients_training, args["num_clients_per_round"], args["adapt_steps"], args["global_steps"])
-#torch.save(global_model.state_dict(), PATH / "proposed_c1")
-global_model.load_state_dict(torch.load(f"_saved_models/{dataset}/seed{seed}/proposed_c1"))
+global_model = train(global_model, clients, clients_training, args["num_clients_per_round"], args["adapt_steps"], args["global_steps"])
+torch.save(global_model.state_dict(), PATH / "proposed_c1")
+#global_model.load_state_dict(torch.load(f"_saved_models/{dataset}/seed{seed}/proposed_c1"))
 # test
 accuracy_proposed = evaluate_fl(global_model, clients, clients_test, args["per_steps"], save=PATH / "acc_proposed_c1")
-print(f"Accuracy proposed: {accuracy_proposed[-1]}")
+print(f"Accuracy proposed: {accuracy_proposed}")
 
 ########################### TRAINING PER-FEDAVG ###########################
 perfedavg_model = args["model"].to(DEVICE)
 clients = [PerFedAvg_Client(args["dataset"], client_id, perfedavg_model, trainset, client_split, args["loss_fn"], args["lr_inner"], args["lr_outer"], args["batch_size"], args["lr_ft"])
            for client_id in range(args["num_clients"])]
 # train
-#perfedavg_model = train(perfedavg_model, clients, clients_training, args["num_clients_per_round"], args["adapt_steps"], args["global_steps"])
-#torch.save(perfedavg_model.state_dict(), PATH / "per_fedavg")
-perfedavg_model.load_state_dict(torch.load(f"_saved_models/{dataset}/seed{seed}/per_fedavg"))
+perfedavg_model = train(perfedavg_model, clients, clients_training, args["num_clients_per_round"], args["adapt_steps"], args["global_steps"])
+torch.save(perfedavg_model.state_dict(), PATH / "per_fedavg")
+#perfedavg_model.load_state_dict(torch.load(f"_saved_models/{dataset}/seed{seed}/per_fedavg"))
 # test
 accuracy_perfedavg = evaluate_fl(perfedavg_model, clients, clients_test, args["per_steps"], save=PATH / "acc_perfedavg")
-print(f"Accuracy PerFedAvg: {accuracy_perfedavg[-1]}")
+print(f"Accuracy PerFedAvg: {accuracy_perfedavg}")
 
 ########################### TRAINING FEDAVG ###########################
 fedavg_model = args["model"].to(DEVICE)
@@ -60,16 +60,16 @@ clients = [FedAvgClient(args["dataset"], client_id, fedavg_model, trainset, clie
            for client_id in range(args["num_clients"])]
 
 # train
-#fedavg_model = train(fedavg_model, clients, clients_training, args["num_clients_per_round"], args["adapt_steps"], args["global_steps"])
-#torch.save(fedavg_model.state_dict(), PATH / "fedavg")
-fedavg_model.load_state_dict(torch.load(f"_saved_models/{dataset}/seed{seed}/fedavg"))
+fedavg_model = train(fedavg_model, clients, clients_training, args["num_clients_per_round"], args["adapt_steps"], args["global_steps"])
+torch.save(fedavg_model.state_dict(), PATH / "fedavg")
+#fedavg_model.load_state_dict(torch.load(f"_saved_models/{dataset}/seed{seed}/fedavg"))
 # test
 accuracy_fedavg = evaluate_fl(fedavg_model, clients, clients_test, fine_tuning=False, save=PATH / "acc_fedavg")
 print(f"Accuracy FedAvg: {accuracy_fedavg}")
 
 ########################### TRAINING FEDAVG-FT ###########################
 accuracy_fedavg_ft = evaluate_fl(fedavg_model, clients, clients_test, args["per_steps"], save=PATH / "acc_fedavg_ft")
-print(f"Accuracy FedAvg-FT: {accuracy_fedavg_ft[-1]}")
+print(f"Accuracy FedAvg-FT: {accuracy_fedavg_ft}")
 
 ###################### TRAINING IFCA - w/o weights sharing ###########################
 n_models = 3
@@ -78,9 +78,9 @@ clients = [IFCAClient(args["dataset"], client_id, ifca_model, trainset, client_s
            for client_id in range(args["num_clients"])]
 
 # train
-#ifca_model = train_ifca(ifca_model, clients, clients_training, args["num_clients_per_round"], args["adapt_steps"], args["global_steps"])
-#for i in range(len(ifca_model)): torch.save(ifca_model[i].state_dict(), PATH / f"ifca{i}")
-for i in range(len(ifca_model)) : ifca_model[i].load_state_dict(torch.load(f"_saved_models/{dataset}/seed{seed}/ifca{i}"))
+ifca_model = train_ifca(ifca_model, clients, clients_training, args["num_clients_per_round"], args["adapt_steps"], args["global_steps"])
+for i in range(len(ifca_model)): torch.save(ifca_model[i].state_dict(), PATH / f"ifca{i}")
+#for i in range(len(ifca_model)) : ifca_model[i].load_state_dict(torch.load(f"_saved_models/{dataset}/seed{seed}/ifca{i}"))
 
 # test
 accuracy_ifca = evaluate_fl(ifca_model, clients, clients_test, fine_tuning=False, save=PATH / "acc_ifca")
@@ -88,7 +88,7 @@ print(f"Accuracy IFCA: {accuracy_ifca}")
 
 ########################### TRAINING IFCA-FT ###########################
 accuracy_ifca_ft = evaluate_fl(ifca_model, clients, clients_test, args["per_steps"], save=PATH / "acc_ifca_ft")
-print(f"Accuracy IFCA-FT: {accuracy_ifca_ft[-1]}")
+print(f"Accuracy IFCA-FT: {accuracy_ifca_ft}")
 
 ###################### TRAINING IFCA - with weights sharing ###########################
 n_models = 3
