@@ -22,6 +22,16 @@ special_transforms = tr.Compose([
 ])
 
 # -------------------------------------------------------------------
+omniglot_transforms = tr.Compose([
+    tr.ToPILImage(),
+    tr.Grayscale(num_output_channels=3),
+    tr.Resize((32, 32)),
+    tr.ToTensor(),
+    tr.Lambda(lambda v: 1. - v), # To be like the original omniglot dataset (black letter on white background)
+])
+
+
+# -------------------------------------------------------------------
 class BaseDataset:
     def __init__(self, folder, transforms=tr.Compose([])):
         if 'imagenet' in folder or 'cifar' in folder:
@@ -88,6 +98,12 @@ class VggFlowerDataset(BaseDataset):
         super().__init__(folder, transforms=default_transforms)
 
 # -------------------------------------------------------------------
+class OmniglotDataset(BaseDataset):
+    def __init__(self):
+        folder = "./data/metadataset-records/omniglot/"
+        super().__init__(folder, transforms=omniglot_transforms)
+
+# -------------------------------------------------------------------
 class MiniImageNetDataset(BaseDataset):
     def __init__(self):
         folder = "./data/miniimagenet/"
@@ -101,13 +117,14 @@ class CifarDataset(BaseDataset):
 
 # -------------------------------------------------------------------
 class MetaDataset(Dataset):
-    def __init__(self, num_clients, num_data=600, num_classes=10, datasets=["aircraft", "cu_birds", "dtd", "traffic_sign", "vgg_flower", "miniimagenet", "cifar"]):
+    def __init__(self, num_clients, num_data=600, num_classes=10, datasets=["aircraft", "cu_birds", "dtd", "traffic_sign", "vgg_flower", "omniglot", "miniimagenet", "cifar"]):
         dico = {
             "aircraft": AircraftDataset,
             "cu_birds": CUBirdsDataset,
             "dtd": DtdDataset,
             "traffic_sign": TrafficSignDataset,
             "vgg_flower": VggFlowerDataset,
+            "omniglot": OmniglotDataset,
             "miniimagenet": MiniImageNetDataset,
             "cifar": CifarDataset,
         }
