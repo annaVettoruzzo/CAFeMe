@@ -20,8 +20,8 @@ dataset = args["dataset"] #rmnist, cifar10, femnist
 partition = args["partition"]
 
 # For saving models
-if dataset == "cifar10": PATH = Path(f"_saved_models/{dataset}/{partition}/seed{seed}")
-else: PATH = Path(f"_saved_models/{dataset}/seed{seed}")
+if partition != None: PATH = Path(f"_saved_models/{dataset}/{partition}/seed{seed}")
+else: PATH = Path(f"_saved_models/{dataset}_5/seed{seed}")
 PATH.mkdir(parents=True, exist_ok=True)
 print(PATH)
 

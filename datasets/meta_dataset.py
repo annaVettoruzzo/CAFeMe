@@ -5,6 +5,7 @@ import os
 from glob import glob
 from collections import defaultdict
 from torch.utils.data import Dataset
+import torchvision
 from torchvision import transforms as tr
 from utils import load_tfrecord_images
 
@@ -15,20 +16,38 @@ default_transforms = tr.Compose([
 ])
 
 # -------------------------------------------------------------------
+special_transforms = tr.Compose([
+    tr.Resize((32, 32)),
+    tr.ToTensor(),
+])
+
+# -------------------------------------------------------------------
 class BaseDataset:
     def __init__(self, folder, transforms=tr.Compose([])):
-        # List all the tfrecords filenames
-        fnames = glob(os.path.join(folder, "*.tfrecords"))
+        if 'imagenet' in folder or 'cifar' in folder:
+            split = "train"
+            dataset = torchvision.datasets.ImageFolder(f"{folder}/{split}", transform=transforms)
 
-        # Group images by their class
-        self.ds_dict = defaultdict(list)
-        self.data, self.labels = [], []
-        for fname in fnames:
-            images, c = load_tfrecord_images(fname)
-            images = [transforms(img).numpy() for img in images]
-            self.ds_dict[c] = images
-            self.data += images
-            self.labels += [c for _ in range(len(images))]
+            # Group images by their class
+            self.ds_dict = defaultdict(list)
+            self.data, self.labels = [], []
+            for img, c in dataset:
+                self.ds_dict[c].append(img.numpy())
+                self.data.append(img.numpy())
+                self.labels.append(c)
+        else:
+            # List all the tfrecords filenames
+            fnames = glob(os.path.join(folder, "*.tfrecords"))
+
+            # Group images by their class
+            self.ds_dict = defaultdict(list)
+            self.data, self.labels = [], []
+            for fname in fnames:
+                images, c = load_tfrecord_images(fname)
+                images = [transforms(img).numpy() for img in images]
+                self.ds_dict[c] = images
+                self.data += images
+                self.labels += [c for _ in range(len(images))]
 
     def __getitem__(self, index):
         img, target = self.data[index], self.labels[index]
@@ -68,16 +87,29 @@ class VggFlowerDataset(BaseDataset):
         folder = "./data/metadataset-records/vgg_flower/"
         super().__init__(folder, transforms=default_transforms)
 
+# -------------------------------------------------------------------
+class MiniImageNetDataset(BaseDataset):
+    def __init__(self):
+        folder = "./data/miniimagenet/"
+        super().__init__(folder, transforms=special_transforms)
+
+# -------------------------------------------------------------------
+class CifarDataset(BaseDataset):
+    def __init__(self):
+        folder = "./data/cifarfs/"
+        super().__init__(folder, transforms=special_transforms)
 
 # -------------------------------------------------------------------
 class MetaDataset(Dataset):
-    def __init__(self, num_clients, num_data=600, num_classes=10, datasets=["aircraft", "cu_birds", "dtd", "traffic_sign", "vgg_flower"]):
+    def __init__(self, num_clients, num_data=600, num_classes=10, datasets=["aircraft", "cu_birds", "dtd", "traffic_sign", "vgg_flower", "miniimagenet", "cifar"]):
         dico = {
             "aircraft": AircraftDataset,
             "cu_birds": CUBirdsDataset,
             "dtd": DtdDataset,
             "traffic_sign": TrafficSignDataset,
-            "vgg_flower": VggFlowerDataset
+            "vgg_flower": VggFlowerDataset,
+            "miniimagenet": MiniImageNetDataset,
+            "cifar": CifarDataset,
         }
 
 

@@ -3,9 +3,9 @@ import torchvision.datasets as datasets
 from torch.utils.data import Dataset
 from torchvision import transforms
 import numpy as np
-from scipy import ndimage
 
 
+# -------------------------------------------------------------------
 class RotatedMNIST(Dataset):
     def __init__(self, num_clients=100, k_clusters=4):
         self.num_clients = num_clients
@@ -51,6 +51,7 @@ class RotatedMNIST(Dataset):
         return data_indices, group_assign
 
 
+# -------------------------------------------------------------------
 class RotatedMNISTNewRotation(Dataset):
     def __init__(self, num_clients=20, k_clusters=4, angle=40):
         self.num_clients = num_clients

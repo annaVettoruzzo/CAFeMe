@@ -122,7 +122,7 @@ def evaluate_fl(global_model, clients, clients_test, steps=100, fine_tuning=True
     tot_acc = []
     for client_id in clients_test:
         if fine_tuning:
-            eval_acc = clients[client_id].perfl_eval(global_model, steps, only_fe)
+            eval_acc = clients[client_id].perfl_eval(global_model, steps) # FIXME: only_fe
         else:
             eval_acc = clients[client_id].fl_eval(global_model)
         tot_acc.append(eval_acc)

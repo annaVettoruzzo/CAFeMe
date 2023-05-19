@@ -22,10 +22,8 @@ def get_dataset(args, transforms=tr.ToTensor()):
         else:
             client_split = CIFAR10Partitioner(trainset.targets, args["num_clients"], balance=None, partition=partition, num_shards=200, dir_alpha=0.3, seed=args["seed"])
     elif dataset == "femnist":
-        trainset = FEMNIST()
-        all_client_split = trainset.get_client_dic()
-        tmp_client_split = random.sample(list(all_client_split.items()), k=args["num_clients"])
-        client_split = dict((i, y) for i, (x, y) in enumerate(tmp_client_split))
+        trainset = FEMNIST(args["num_clients"], partition)
+        client_split = trainset.get_client_dic()
     elif dataset == "rmnist":
         trainset = RotatedMNIST(args["num_clients"])
         client_split = trainset.get_client_dic()

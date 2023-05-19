@@ -7,7 +7,7 @@ from pathlib import Path
 from arguments import set_args
 import matplotlib.pyplot as plt
 
-dataset = "meta_dataset"# args["dataset"] #rmnist, cifar10, femnist
+dataset = "meta_dataset"# args["dataset"] #rmnist, cifar10, femnist, meta_dataset, complete_meta_dataset
 partition = "dirichlet"
 
 if dataset == "cifar10":

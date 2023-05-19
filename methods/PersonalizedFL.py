@@ -51,9 +51,11 @@ class MultimodalFL_Client:
         return adapted_params_dict
 
     # -------------------------------------------------------------------
-    def get_adapted_parameters(self, data_batch, adapt_steps):
+    def get_adapted_parameters(self, adapt_steps):
+        data_batch = self.get_data_batch()
         phi = self.adapt(dict(self.local_model.named_parameters()), data_batch)
         for _ in range(adapt_steps - 1):
+            data_batch = self.get_data_batch()
             phi = self.adapt(phi, data_batch)
         return phi
 
@@ -61,10 +63,9 @@ class MultimodalFL_Client:
     def fit(self, global_model, adapt_steps):
         self.local_model.load_state_dict(global_model.state_dict())
 
-        data_batch_1 = self.get_data_batch()
-        phi = self.get_adapted_parameters(data_batch_1, adapt_steps)
+        phi = self.get_adapted_parameters(adapt_steps)
 
-        x_2, y_2 = self.get_data_batch()
+        x_2, y_2 = self.get_eval_data_batch()
         y_pred = func_call(self.local_model, phi, x_2)
         loss = self.loss_fn(y_pred, y_2)
 
@@ -128,7 +129,7 @@ class PerFedAvg_Client:
         return x.to(self.device), y.to(self.device)
 
     # -------------------------------------------------------------------
-    def get_eval_data_batch(self, size_ratio=4):
+    def get_eval_data_batch(self, size_ratio=6):
         x_test, y_test = self.get_data_batch()
         for i in range(size_ratio - 1):
             x, y = self.get_data_batch()
