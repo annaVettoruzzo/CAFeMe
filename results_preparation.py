@@ -7,7 +7,7 @@ from pathlib import Path
 from arguments import set_args
 import matplotlib.pyplot as plt
 
-dataset = "meta_dataset"# args["dataset"] #rmnist, cifar10, femnist, meta_dataset, complete_meta_dataset
+dataset = "meta_dataset_5"# args["dataset"] #rmnist, cifar10, femnist, meta_dataset, complete_meta_dataset
 partition = "dirichlet"
 
 if dataset == "cifar10":
@@ -40,7 +40,7 @@ for i, name in enumerate(methods):
         file = open(file_dir, 'rb')
         data_loaded = pickle.load(file)
         file.close()
-
+        if name == "proposed_c1" or name == "perfedavg": print(f"{name}: {data_loaded[-1]}")
         avg_accuracies.append(data_loaded)
     dict_accuracies_mean[name] = np.mean(avg_accuracies, axis=0)
     dict_accuracies_std[name] = np.std(avg_accuracies, axis=0)

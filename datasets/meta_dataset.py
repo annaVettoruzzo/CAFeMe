@@ -137,6 +137,7 @@ class MetaDataset(Dataset):
         self.all_datasets = [DatasetGenerator() for name, DatasetGenerator in dico.items() if name in datasets]
 
         self.data, self.labels = [], []
+        #self.dic_users = [[]] * self.num_clients
         self.dic_users = {}
         count = 0
         for i in range(self.num_clients):
@@ -145,6 +146,11 @@ class MetaDataset(Dataset):
             self.data += images
             self.labels += targets
             self.dic_users[i] = np.arange(len(images)) + count
+            #user_info = {}
+            #user_info["mode"] = mode
+            #user_info["idxs"] = np.arange(len(images)) + count
+            #user_info["targets"] = targets
+            #self.dic_users[i] = user_info
             count += len(images)
 
     def sample_batch(self, mode):
@@ -157,8 +163,9 @@ class MetaDataset(Dataset):
 
         images, targets = [], []
         for c in classes:
-            images += random.sample(mode.ds_dict[c], min(len(mode.ds_dict[c]), self.num_data//self.num_classes))  # FIXME: only ok for balanced setting
-            targets += [label_map[c] for _ in range(len(images))]
+            imgs = random.sample(mode.ds_dict[c], min(len(mode.ds_dict[c]), self.num_data//self.num_classes))  # FIXME: only ok for balanced setting
+            images += imgs
+            targets += [label_map[c] for _ in range(len(imgs))]
         return images, targets
 
 
