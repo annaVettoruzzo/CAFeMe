@@ -7,26 +7,16 @@ from pathlib import Path
 from arguments import set_args
 import matplotlib.pyplot as plt
 
-dataset = "meta_dataset_5"# args["dataset"] #rmnist, cifar10, femnist, meta_dataset, complete_meta_dataset
-partition = "dirichlet"
+dataset = "femnist_new"# args["dataset"] #rmnist, cifar10, femnist, meta_dataset, complete_meta_dataset
+partition = "None"
 
-if dataset == "cifar10":
-    folders = [f"_saved_models/{dataset}/{partition}/seed0/",
-               f"_saved_models/{dataset}/{partition}/seed1/", #seed5 for dirichlet
-               f"_saved_models/{dataset}/{partition}/seed2/",
-               f"_saved_models/{dataset}/{partition}/seed3/",
-               f"_saved_models/{dataset}/{partition}/seed4/",
-               ]
-    PATH = Path(f"_saved_models/{dataset}/{partition}")
-else:
-    folders = [f"_saved_models/{dataset}/seed0/",
-               f"_saved_models/{dataset}/seed1/",
-               f"_saved_models/{dataset}/seed2/",
-               f"_saved_models/{dataset}/seed3/",
-               f"_saved_models/{dataset}/seed4/",
-               ]
-    PATH = Path(f"_saved_models/{dataset}/")
-
+folders = [f"_saved_models/{dataset}/{partition}/seed0/",
+           #f"_saved_models/{dataset}/{partition}/seed1/", #seed5 for dirichlet
+           #f"_saved_models/{dataset}/{partition}/seed2/",
+           #f"_saved_models/{dataset}/{partition}/seed3/",
+           #f"_saved_models/{dataset}/{partition}/seed4/",
+           ]
+PATH = Path(f"_saved_models/{dataset}/{partition}")
 PATH.mkdir(parents=True, exist_ok=True)
 
 methods = ["fedavg", "fedavg_ft", "perfedavg", "ifca", "ifca_ft", "ifca_sharing", "proposed_c1"]

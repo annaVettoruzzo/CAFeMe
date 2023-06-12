@@ -16,7 +16,7 @@ class FEMNIST(Dataset):
     "LEAF: A Benchmark for Federated Settings" https://arxiv.org/abs/1812.01097.
     """
 
-    def __init__(self, num_clients=200, partition=None):
+    def __init__(self, num_clients=200):
         train_clients, _, train_data_temp = read_data("./data/femnist/data/train")
         train_clients = random.sample(train_clients, k=num_clients)
 
@@ -33,14 +33,11 @@ class FEMNIST(Dataset):
                 train_data_x.append(np.array(cur_x[j]).reshape(28, 28))
                 train_data_y.append(cur_y[j])
 
-        if partition == "shards":
-            self.dic_users = shards_partition(train_data_y, len(train_clients), num_shards=400)
-
         self.data = train_data_x
-        self.label = train_data_y
+        self.targets = train_data_y
 
     def __getitem__(self, index):
-        img, target = self.data[index], self.label[index]
+        img, target = self.data[index], self.targets[index]
         img = np.array([img])
         return torch.from_numpy((0.5-img)/0.5).float(), target
 

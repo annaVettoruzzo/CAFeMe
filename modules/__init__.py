@@ -1,4 +1,4 @@
 from .SimpleCNNModuleWithTE import SimpleCNNModuleWithTE
 from .SimpleCNNModule import SimpleCNNModule
-from .SimpleFNNModuleWithTE import SimpleFNNModuleWithTE
-from .SimpleFNNModule import SimpleFNNModule
+from .SimpleFNNModuleWithTE import SimpleFNNModuleWithTE, ComplexFNNModuleWithTE
+from .SimpleFNNModule import SimpleFNNModule, ComplexFNNModule

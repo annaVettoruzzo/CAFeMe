@@ -20,8 +20,7 @@ dataset = args["dataset"] #rmnist, cifar10, femnist
 partition = args["partition"]
 
 # For saving models
-if partition != None: PATH = Path(f"_saved_models/{dataset}/{partition}/seed{seed}")
-else: PATH = Path(f"_saved_models/{dataset}_5/seed{seed}")
+PATH = Path(f"_saved_models/{dataset}_new/{partition}/seed{seed}")
 PATH.mkdir(parents=True, exist_ok=True)
 print(PATH)
 
@@ -78,7 +77,7 @@ accuracy_fedavg_ft = evaluate_fl(fedavg_model, clients, clients_test, args["per_
 print(f"Accuracy FedAvg-FT: {accuracy_fedavg_ft}")
 
 ###################### TRAINING IFCA - w/o weights sharing ###########################
-n_models = 3
+n_models = args["n_models_ifca"]
 ifca_model = [args["model"].to(DEVICE) for _ in range(n_models)]
 clients = [IFCAClient(args["dataset"], client_id, ifca_model, trainset, client_split, args["loss_fn"], args["lr_outer"], args["batch_size"], args["lr_ft"])
            for client_id in range(args["num_clients"])]
@@ -97,7 +96,7 @@ accuracy_ifca_ft = evaluate_fl(ifca_model, clients, clients_test, args["per_step
 print(f"Accuracy IFCA-FT: {accuracy_ifca_ft}")
 
 ###################### TRAINING IFCA - with weights sharing ###########################
-n_models = 3
+n_models = args["n_models_ifca"]
 ifca_sharing_model = [args["model"].to(DEVICE) for _ in range(n_models)]
 clients = [IFCAClient(args["dataset"], client_id, ifca_sharing_model, trainset, client_split, args["loss_fn"], args["lr_outer"], args["batch_size"])
            for client_id in range(args["num_clients"])]

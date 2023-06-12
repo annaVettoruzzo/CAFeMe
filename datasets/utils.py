@@ -1,6 +1,4 @@
 import random
-import torch
-import numpy as np
 import torchvision
 import torchvision.transforms as tr
 from torch.utils.data import Dataset, Subset, BatchSampler, DataLoader
@@ -24,11 +22,17 @@ def get_dataset(args, transforms=tr.ToTensor()):
         else:
             client_split = CIFAR10Partitioner(trainset.targets, args["num_clients"], balance=None, partition=partition, num_shards=200, dir_alpha=0.3, seed=args["seed"])
     elif dataset == "femnist":
-        trainset = FEMNIST(args["num_clients"], partition)
+        trainset = FEMNIST(args["num_clients"])
         client_split = trainset.get_client_dic()
+    elif dataset == "femnist" and partition == "shards":
+        trainset = FEMNIST(args["num_clients"])
+        client_split = CIFAR10Partitioner(trainset.targets, args["num_clients"], balance=None, partition=partition, num_shards=200, dir_alpha=0.3, seed=args["seed"])
     elif dataset == "rmnist":
-        trainset = RotatedMNIST(args["num_clients"])
-        client_split = trainset.get_client_dic()
+        trainset = RotatedMNIST(args["num_clients"], args["k_clusters"])
+        if partition == "shards" or partition == "dirichlet":
+            client_split = CIFAR10Partitioner(trainset.targets, args["num_clients"], balance=None, partition=partition, num_shards=200, dir_alpha=0.3, seed=args["seed"])
+        else:
+            client_split = trainset.get_client_dic()
     elif dataset == "rmnist_newrotation":
         trainset = RotatedMNISTNewRotation(args["num_clients"])
         client_split = trainset.get_client_dic()
