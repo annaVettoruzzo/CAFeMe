@@ -4,7 +4,7 @@ import numpy as np
 import random
 from pathlib import Path
 from utils import DEVICE, train, train_ifca, evaluate_fl
-from methods import MultimodalFL_Client, PerFedAvg_Client, FedAvgClient, IFCAClient
+from methods import MultimodalFL_Client, PerFedAvg_Client, Ditto_Client, FedAvgClient, IFCAClient
 from datasets import get_dataset, get_clients_id
 from arguments import set_args
 
@@ -20,14 +20,14 @@ dataset = args["dataset"] #rmnist, cifar10, femnist
 partition = args["partition"]
 
 # For saving models
-PATH = Path(f"_saved_models/{dataset}_new/{partition}/seed{seed}")
+PATH = Path(f"_saved_models/{dataset}_10rotation/{partition}/seed{seed}")
 PATH.mkdir(parents=True, exist_ok=True)
 print(PATH)
 
 ########################### DATASET ###########################
 trainset, client_split = get_dataset(args, transforms=transforms.ToTensor())
 clients_training, clients_test = get_clients_id(args["num_clients"], args["p_val"])
-
+"""
 ########################### TRAINING PROPOSED ###########################
 global_model = args["model_proposed"].to(DEVICE)
 clients = [MultimodalFL_Client(args["dataset"], client_id, global_model, trainset, client_split, args["loss_fn"], args["lr_inner"], args["lr_outer"], args["batch_size"], args["lr_ft_pfl"])
@@ -35,7 +35,7 @@ clients = [MultimodalFL_Client(args["dataset"], client_id, global_model, trainse
 
 # train
 global_model = train(global_model, clients, clients_training, args["num_clients_per_round"], args["adapt_steps"], args["global_steps"])
-torch.save(global_model.state_dict(), PATH / "proposed_c1")
+#torch.save(global_model.state_dict(), PATH / "proposed_c1")
 #global_model.load_state_dict(torch.load(f"_saved_models/{dataset}/seed{seed}/proposed_c1"))
 # test
 accuracy_proposed = evaluate_fl(global_model, clients, clients_test, args["per_steps"], save=PATH / "acc_proposed_c1")
@@ -47,7 +47,7 @@ clients = [PerFedAvg_Client(args["dataset"], client_id, perfedavg_model, trainse
            for client_id in range(args["num_clients"])]
 # train
 perfedavg_model = train(perfedavg_model, clients, clients_training, args["num_clients_per_round"], args["adapt_steps"], args["global_steps"])
-torch.save(perfedavg_model.state_dict(), PATH / "per_fedavg")
+#torch.save(perfedavg_model.state_dict(), PATH / "per_fedavg")
 #perfedavg_model.load_state_dict(torch.load(f"_saved_models/{dataset}/seed{seed}/per_fedavg"))
 # test
 accuracy_perfedavg = evaluate_fl(perfedavg_model, clients, clients_test, args["per_steps"], save=PATH / "acc_perfedavg")
@@ -60,7 +60,7 @@ clients = [FedAvgClient(args["dataset"], client_id, fedavg_model, trainset, clie
 
 # train
 fedavg_model = train(fedavg_model, clients, clients_training, args["num_clients_per_round"], args["adapt_steps"], args["global_steps"])
-torch.save(fedavg_model.state_dict(), PATH / "fedavg")
+#torch.save(fedavg_model.state_dict(), PATH / "fedavg")
 #fedavg_model.load_state_dict(torch.load(f"_saved_models/{dataset}/seed{seed}/fedavg"))
 
 # test
@@ -84,7 +84,7 @@ clients = [IFCAClient(args["dataset"], client_id, ifca_model, trainset, client_s
 
 # train
 ifca_model = train_ifca(ifca_model, clients, clients_training, args["num_clients_per_round"], args["adapt_steps"], args["global_steps"])
-for i in range(len(ifca_model)): torch.save(ifca_model[i].state_dict(), PATH / f"ifca{i}")
+#for i in range(len(ifca_model)): torch.save(ifca_model[i].state_dict(), PATH / f"ifca{i}")
 #for i in range(len(ifca_model)) : ifca_model[i].load_state_dict(torch.load(f"_saved_models/{dataset}/seed{seed}/ifca{i}"))
 
 # test
@@ -102,9 +102,22 @@ clients = [IFCAClient(args["dataset"], client_id, ifca_sharing_model, trainset, 
            for client_id in range(args["num_clients"])]
 # train
 ifca_sharing_model = train_ifca(ifca_sharing_model, clients, clients_training, args["num_clients_per_round"], args["adapt_steps"], args["global_steps"], weight_sharing=True)
-for i in range(len(ifca_sharing_model)): torch.save(ifca_sharing_model[i].state_dict(), PATH / f"ifca_sharing{i}")
+#for i in range(len(ifca_sharing_model)): torch.save(ifca_sharing_model[i].state_dict(), PATH / f"ifca_sharing{i}")
 #for i in range(len(ifca_sharing_model)) : ifca_sharing_model[i].load_state_dict(torch.load(f"_saved_models/{dataset}/seed{seed}/ifca_sharing{i}"))
 
 # test
 accuracy_ifca_sharing = evaluate_fl(ifca_sharing_model, clients, clients_test, fine_tuning=False, save=PATH / "acc_ifca_sharing")
 print(f"Accuracy IFCA sharing weights: {accuracy_ifca_sharing}")
+
+"""
+###################### TRAINING DITTO ###########################
+ditto_model = args["model"].to(DEVICE)
+clients = [Ditto_Client(args["dataset"], client_id, ditto_model, trainset, client_split, args["loss_fn"], args["lr_outer"], args['mu'], args["batch_size"], args["lr_ft"])
+           for client_id in range(args["num_clients"])]
+
+# train
+ditto_model = train(ditto_model, clients, clients_training, args["num_clients_per_round"], args["adapt_steps"], args["global_steps"])
+torch.save(ditto_model.state_dict(), PATH / "ditto")
+# test
+accuracy_ditto = evaluate_fl(ditto_model, clients, clients_test, args["per_steps"], save=PATH / "acc_ditto")
+print(accuracy_ditto)

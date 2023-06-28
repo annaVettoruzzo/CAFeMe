@@ -19,14 +19,14 @@ def get_dataset(args, transforms=tr.ToTensor()):
         if "unbalanced" in partition:
             partition_list = partition.split("_")
             client_split = CIFAR10Partitioner(trainset.targets, args["num_clients"], balance=False, partition=partition_list[1], dir_alpha=0.3, unbalance_sgm=0.3, seed=args["seed"])
-        else:
+        else: # this for shards and dirichlet
             client_split = CIFAR10Partitioner(trainset.targets, args["num_clients"], balance=None, partition=partition, num_shards=200, dir_alpha=0.3, seed=args["seed"])
     elif dataset == "femnist":
         trainset = FEMNIST(args["num_clients"])
-        client_split = trainset.get_client_dic()
-    elif dataset == "femnist" and partition == "shards":
-        trainset = FEMNIST(args["num_clients"])
-        client_split = CIFAR10Partitioner(trainset.targets, args["num_clients"], balance=None, partition=partition, num_shards=200, dir_alpha=0.3, seed=args["seed"])
+        if partition == "shards" or partition == "dirichlet":
+            client_split = CIFAR10Partitioner(trainset.targets, args["num_clients"], balance=None, partition=partition, num_shards=200, dir_alpha=0.3, seed=args["seed"])
+        else:
+            client_split = trainset.get_client_dic()
     elif dataset == "rmnist":
         trainset = RotatedMNIST(args["num_clients"], args["k_clusters"])
         if partition == "shards" or partition == "dirichlet":

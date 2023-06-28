@@ -6,12 +6,13 @@ from tfrecord.torch.dataset import TFRecordDataset
 from cv2 import imdecode
 from .stateless import functional_call
 from sklearn.metrics import accuracy_score
+from torch.optim import Optimizer
 
 # -------------------------------------------------------------------
-os.system('nvidia-smi -q -d Memory |grep -A6 GPU|grep Free >tmp')
-memory_available = [int(x.split()[2]) for x in open('tmp', 'r').readlines()]
-gpu_number = int(np.argmax(memory_available))
-torch.cuda.set_device(gpu_number)
+#os.system('nvidia-smi -q -d Memory |grep -A6 GPU|grep Free >tmp')
+#memory_available = [int(x.split()[2]) for x in open('tmp', 'r').readlines()]
+#gpu_number = int(np.argmax(memory_available))
+#torch.cuda.set_device(gpu_number)
 DEVICE = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
 
@@ -105,6 +106,19 @@ def reset_weights(model, name_layer):
                     l.reset_parameters()
     return
 
+# -------------------------------------------------------------------
+class PerturbedGradientDescent(Optimizer):
+    def __init__(self, params, lr=0.01, mu=0.0):
+        default = dict(lr=lr, mu=mu)
+        super().__init__(params, default)
+
+    @torch.no_grad()
+    def step(self, global_params, device):
+        for group in self.param_groups:
+            for p, g in zip(group['params'], global_params):
+                g = g.to(device)
+                d_p = p.grad.data + group['mu'] * (p.data - g.data)
+                p.data.add_(d_p, alpha=-group['lr'])
 
 # -------------------------------------------------------------------
 def evaluate_client(model, dataloader):
@@ -133,5 +147,6 @@ def evaluate_fl(global_model, clients, clients_test, steps=100, fine_tuning=True
         with open(f'{save}.pkl', 'wb') as file:
             pickle.dump(avg_acc, file)
     return avg_acc
+
 
 

@@ -3,7 +3,7 @@ import copy
 from collections import OrderedDict
 
 from datasets import get_dataloader
-from utils import DEVICE, func_call, serialize_model_params, evaluate_client
+from utils import DEVICE, func_call, serialize_model_params, evaluate_client, PerturbedGradientDescent
 
 
 class MultimodalFL_Client:
@@ -198,6 +198,102 @@ class PerFedAvg_Client:
             loss = self.loss_fn(logit, y)
             grads = torch.autograd.grad(loss, model.parameters())
             return grads
+
+    # -------------------------------------------------------------------
+    def perfl_eval(self, global_model, per_steps):
+        # Copy the model to avoid adapting the original one
+        cmodel = copy.deepcopy(global_model)
+
+        optimizer = torch.optim.SGD(cmodel.parameters(), self.lr_ft)
+        scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.8)
+
+        test_acc = []
+        for step in range(per_steps + 1):
+            acc = evaluate_client(cmodel, self.valloader)
+            test_acc.append(acc)
+
+            # Adapt the model using training data
+            x, y = self.get_data_batch()
+            y_pred = cmodel(x)
+            loss = self.loss_fn(y_pred, y)
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+
+            if (step + 1) % 5 == 0:
+                scheduler.step()
+
+        return test_acc
+
+
+class Ditto_Client:
+    def __init__(self, dataset, client_id, global_model, trainset, client_split, loss_fn, lr=0.001, mu=0.1, batch_size=20, lr_ft=0.01):
+        self.trainloader, self.valloader = get_dataloader(dataset, trainset, client_split, client_id, batch_size, val_ratio=0.2)
+        self.iter_trainloader = iter(self.trainloader)
+
+        self.loss_fn = loss_fn
+        self.lr = lr
+        self.mu = mu
+        self.lr_ft = lr_ft
+        self.device = DEVICE
+
+        self.local_model = copy.deepcopy(global_model)
+        self.local_optimizer = torch.optim.Adam(self.local_model.parameters(), lr=self.lr)
+
+        self.model_per = copy.deepcopy(self.local_model)
+        self.optimizer_per = PerturbedGradientDescent(self.model_per.parameters(), lr=self.lr, mu=self.mu)
+
+    # -------------------------------------------------------------------
+    def get_data_batch(self):
+        try:
+            x, y = next(self.iter_trainloader)
+        except StopIteration:
+            self.iter_trainloader = iter(self.trainloader)
+            x, y = next(self.iter_trainloader)
+
+        return x.to(self.device), y.to(self.device)
+
+    # -------------------------------------------------------------------
+    def get_eval_data_batch(self, size_ratio=6):
+        x_test, y_test = self.get_data_batch()
+        for i in range(size_ratio - 1):
+            x, y = self.get_data_batch()
+            x_test, y_test = torch.cat((x_test, x), dim=0), torch.cat((y_test, y), dim=0)
+
+        return x_test.to(self.device), y_test.to(self.device)
+
+    # -------------------------------------------------------------------
+    def train(self, global_model, adapt_steps):
+        self.local_model.load_state_dict(global_model.state_dict())
+
+        for _ in range(adapt_steps):
+            x, y = self.get_data_batch()
+            y_pred = self.local_model(x)
+            loss = self.loss_fn(y_pred, y)
+
+            self.local_optimizer.zero_grad()
+            loss.backward()
+            self.local_optimizer.step()
+
+        return serialize_model_params(self.local_model), loss.item()
+
+    # -------------------------------------------------------------------
+    def ptrain(self, adapt_steps):
+        for _ in range(adapt_steps):
+            x, y = self.get_data_batch()
+            y_pred = self.model_per(x)
+            loss = self.loss_fn(y_pred, y)
+
+            self.optimizer_per.zero_grad()
+            loss.backward()
+            self.optimizer_per.step(self.local_model.parameters(), DEVICE)
+
+        return
+
+    # -------------------------------------------------------------------
+    def fit(self, global_model, adapt_steps):
+        self.ptrain(adapt_steps)
+        return self.train(global_model, adapt_steps)
 
     # -------------------------------------------------------------------
     def perfl_eval(self, global_model, per_steps):

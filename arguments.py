@@ -6,7 +6,7 @@ from modules import SimpleCNNModuleWithTE, SimpleCNNModule, SimpleFNNModuleWithT
 
 def set_args():
     args_dict = {}
-
+    """
     # CMD line arguments
     parser = argparse.ArgumentParser()
     parser.add_argument('seed', type=int, help='Seed')
@@ -18,10 +18,10 @@ def set_args():
     args_dict["seed"] = args.seed
     args_dict["partition"] = args.partition
     """
-    args_dict["dataset"] = "femnist"
-    args_dict["seed"] = 0
+    args_dict["dataset"] = "rmnist"
+    args_dict["seed"] = 1
     args_dict["partition"] = "None"
-    """
+
     if args_dict["dataset"] == "cifar10":
         args_dict["p_val"] = 0.8
         args_dict["num_clients"] = 100
@@ -32,6 +32,7 @@ def set_args():
 
         args_dict["lr_inner"] = 0.05
         args_dict["lr_outer"] = 0.001
+        args_dict['mu'] = 0.1 # for Ditto
         args_dict["lr_ft_pfl"] = 0.05
         args_dict["lr_ft"] = 0.01
         args_dict["loss_fn"] = torch.nn.CrossEntropyLoss().to(DEVICE)
@@ -53,6 +54,7 @@ def set_args():
 
         args_dict["lr_inner"] = 0.01
         args_dict["lr_outer"] = 0.001
+        args_dict['mu'] = 0.1  # for Ditto
         args_dict["lr_ft_pfl"] = 0.01
         args_dict["lr_ft"] = 0.001
         args_dict["loss_fn"] = torch.nn.CrossEntropyLoss().to(DEVICE)
@@ -78,6 +80,7 @@ def set_args():
 
         args_dict["lr_inner"] = 0.05
         args_dict["lr_outer"] = 0.001
+        args_dict['mu'] = 0.1  # for Ditto
         args_dict["lr_ft_pfl"] = 0.01  # used for personalization with proposed approach
         args_dict["lr_ft"] = 0.001
         args_dict["loss_fn"] = torch.nn.CrossEntropyLoss().to(DEVICE)
@@ -90,17 +93,18 @@ def set_args():
         args_dict["model"] = SimpleFNNModule(conv_dim=[1, 32, 64], dense_dim=[1024, 512], n_classes=args_dict["num_classes"])
 
     if args_dict["dataset"] == "meta_dataset":
-        args_dict["datasets"] = ["aircraft", "cu_birds", "dtd", "traffic_sign", "vgg_flower"]
+        args_dict["datasets"] = ["aircraft", "cu_birds", "dtd", "traffic_sign", "vgg_flower", "omniglot", "miniimagenet", "cifar"]
         args_dict["p_val"] = 0.8
         args_dict["num_clients"] = 100
         args_dict["num_data"] = 600
-        args_dict["num_classes"] = 5
+        args_dict["num_classes"] = 10
         args_dict["batch_size"] = 30
         args_dict["num_clients_per_round"] = 5
         args_dict["n_models_ifca"] = len(args_dict["datasets"])
 
         args_dict["lr_inner"] = 0.05
         args_dict["lr_outer"] = 0.001
+        args_dict['mu'] = 0.1  # for Ditto
         args_dict["lr_ft_pfl"] = 0.05
         args_dict["lr_ft"] = 0.01
         args_dict["loss_fn"] = torch.nn.CrossEntropyLoss().to(DEVICE)
