@@ -320,3 +320,96 @@ class Ditto_Client:
                 scheduler.step()
 
         return test_acc
+
+
+class FedRep_Client:
+    def __init__(self, dataset, client_id, global_model, trainset, client_split, loss_fn, lr=0.001, batch_size=20, lr_ft=0.01):
+        self.trainloader, self.valloader = get_dataloader(dataset, trainset, client_split, client_id, batch_size, val_ratio=0.2)
+        self.iter_trainloader = iter(self.trainloader)
+
+        self.loss_fn = loss_fn
+        self.lr = lr
+        self.lr_ft = lr_ft
+        self.device = DEVICE
+
+        self.local_model = copy.deepcopy(global_model)
+        self.optimizer = torch.optim.Adam(self.local_model.base.parameters(), lr=self.lr)
+        self.optimizer_per = torch.optim.Adam(self.local_model.head.parameters(), lr=self.lr)
+
+    # -------------------------------------------------------------------
+    def get_data_batch(self):
+        try:
+            x, y = next(self.iter_trainloader)
+        except StopIteration:
+            self.iter_trainloader = iter(self.trainloader)
+            x, y = next(self.iter_trainloader)
+
+        return x.to(self.device), y.to(self.device)
+
+    # -------------------------------------------------------------------
+    def get_eval_data_batch(self, size_ratio=6):
+        x_test, y_test = self.get_data_batch()
+        for i in range(size_ratio - 1):
+            x, y = self.get_data_batch()
+            x_test, y_test = torch.cat((x_test, x), dim=0), torch.cat((y_test, y), dim=0)
+
+        return x_test.to(self.device), y_test.to(self.device)
+
+    # -------------------------------------------------------------------
+    def fit(self, global_model, adapt_steps):
+        self.local_model.load_state_dict(global_model.state_dict())
+
+        for param in self.local_model.base.parameters():
+            param.requires_grad = False
+        for param in self.local_model.head.parameters():
+            param.requires_grad = True
+
+        for _ in range(adapt_steps):
+            x, y = self.get_data_batch()
+            y_pred = self.local_model(x)
+            loss = self.loss_fn(y_pred, y)
+
+            self.optimizer_per.zero_grad()
+            loss.backward()
+            self.optimizer_per.step()
+
+        for param in self.local_model.base.parameters():
+            param.requires_grad = True
+        for param in self.local_model.head.parameters():
+            param.requires_grad = False
+
+        x, y = self.get_data_batch()
+        y_pred = self.local_model(x)
+        loss = self.loss_fn(y_pred, y)
+
+        self.optimizer.zero_grad()
+        loss.backward()
+        self.optimizer.step()
+
+        return serialize_model_params(self.local_model), loss.item()
+
+    # -------------------------------------------------------------------
+    def perfl_eval(self, global_model, per_steps):
+        # Copy the model to avoid adapting the original one
+        cmodel = copy.deepcopy(global_model)
+
+        optimizer = torch.optim.SGD(cmodel.parameters(), self.lr_ft)
+        scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.8)
+
+        test_acc = []
+        for step in range(per_steps + 1):
+            acc = evaluate_client(cmodel, self.valloader)
+            test_acc.append(acc)
+
+            # Adapt the model using training data
+            x, y = self.get_data_batch()
+            y_pred = cmodel(x)
+            loss = self.loss_fn(y_pred, y)
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+
+            if (step + 1) % 5 == 0:
+                scheduler.step()
+
+        return test_acc

@@ -6,7 +6,7 @@ from modules import SimpleCNNModuleWithTE, SimpleCNNModule, SimpleFNNModuleWithT
 
 def set_args():
     args_dict = {}
-    """
+
     # CMD line arguments
     parser = argparse.ArgumentParser()
     parser.add_argument('seed', type=int, help='Seed')
@@ -19,9 +19,9 @@ def set_args():
     args_dict["partition"] = args.partition
     """
     args_dict["dataset"] = "rmnist"
-    args_dict["seed"] = 1
+    args_dict["seed"] = 4
     args_dict["partition"] = "None"
-
+    """
     if args_dict["dataset"] == "cifar10":
         args_dict["p_val"] = 0.8
         args_dict["num_clients"] = 100

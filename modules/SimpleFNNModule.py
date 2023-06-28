@@ -9,8 +9,10 @@ class SimpleFNNModule(torch.nn.Module):
         self.cnn_block1 = self.cnn_block(conv_dim[0], conv_dim[1])
         self.cnn_block2 = self.cnn_block(conv_dim[1], conv_dim[2])
         self.flat = torch.nn.Flatten()
-        self.dense_block1 = self.dense_block(dense_dim[0], dense_dim[1])
-        self.lin = torch.nn.Linear(dense_dim[1], n_classes)
+        self.fc = torch.nn.Sequential(
+            self.dense_block(dense_dim[0], dense_dim[1]),
+            torch.nn.Linear(dense_dim[1], n_classes)
+        )
 
     def cnn_block(self, in_channels, out_channels):
         return torch.nn.Sequential(
@@ -31,8 +33,7 @@ class SimpleFNNModule(torch.nn.Module):
         x = self.cnn_block1(x)
         x = self.cnn_block2(x)
         x = self.flat(x)
-        x = self.dense_block1(x)
-        x = self.lin(x)
+        x = self.fc(x)
         return x
 
 
@@ -45,9 +46,11 @@ class ComplexFNNModule(torch.nn.Module):
         self.cnn_block2 = self.cnn_block(conv_dim[1], conv_dim[2])
         self.cnn_block3 = self.cnn_block(conv_dim[2], conv_dim[3])
         self.flat = torch.nn.Flatten()
-        self.dense_block1 = self.dense_block(dense_dim[0], dense_dim[1])
-        self.dense_block2 = self.dense_block(dense_dim[0], dense_dim[2])
-        self.lin = torch.nn.Linear(dense_dim[2], n_classes)
+        self.fc = torch.nn.Sequential(
+            self.dense_block(dense_dim[0], dense_dim[1]),
+            self.dense_block(dense_dim[0], dense_dim[2]),
+            torch.nn.Linear(dense_dim[2], n_classes)
+        )
 
     def cnn_block(self, in_channels, out_channels):
         return torch.nn.Sequential(
@@ -69,7 +72,5 @@ class ComplexFNNModule(torch.nn.Module):
         x = self.cnn_block2(x)
         x = self.cnn_block3(x)
         x = self.flat(x)
-        x = self.dense_block1(x)
-        x = self.dense_block2(x)
-        x = self.lin(x)
+        x = self.fc(x)
         return x

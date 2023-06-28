@@ -1,10 +1,13 @@
+import copy
+
 import torch
 from torchvision import transforms
 import numpy as np
 import random
 from pathlib import Path
 from utils import DEVICE, train, train_ifca, evaluate_fl
-from methods import MultimodalFL_Client, PerFedAvg_Client, Ditto_Client, FedAvgClient, IFCAClient
+from methods import MultimodalFL_Client, PerFedAvg_Client, Ditto_Client, FedRep_Client, FedAvgClient, IFCAClient
+from modules import BaseHeadSplit
 from datasets import get_dataset, get_clients_id
 from arguments import set_args
 
@@ -20,14 +23,14 @@ dataset = args["dataset"] #rmnist, cifar10, femnist
 partition = args["partition"]
 
 # For saving models
-PATH = Path(f"_saved_models/{dataset}_10rotation/{partition}/seed{seed}")
+PATH = Path(f"_saved_models/{dataset}_complete/{partition}/seed{seed}")
 PATH.mkdir(parents=True, exist_ok=True)
 print(PATH)
 
 ########################### DATASET ###########################
 trainset, client_split = get_dataset(args, transforms=transforms.ToTensor())
 clients_training, clients_test = get_clients_id(args["num_clients"], args["p_val"])
-"""
+
 ########################### TRAINING PROPOSED ###########################
 global_model = args["model_proposed"].to(DEVICE)
 clients = [MultimodalFL_Client(args["dataset"], client_id, global_model, trainset, client_split, args["loss_fn"], args["lr_inner"], args["lr_outer"], args["batch_size"], args["lr_ft_pfl"])
@@ -109,7 +112,6 @@ ifca_sharing_model = train_ifca(ifca_sharing_model, clients, clients_training, a
 accuracy_ifca_sharing = evaluate_fl(ifca_sharing_model, clients, clients_test, fine_tuning=False, save=PATH / "acc_ifca_sharing")
 print(f"Accuracy IFCA sharing weights: {accuracy_ifca_sharing}")
 
-"""
 ###################### TRAINING DITTO ###########################
 ditto_model = args["model"].to(DEVICE)
 clients = [Ditto_Client(args["dataset"], client_id, ditto_model, trainset, client_split, args["loss_fn"], args["lr_outer"], args['mu'], args["batch_size"], args["lr_ft"])
@@ -120,4 +122,20 @@ ditto_model = train(ditto_model, clients, clients_training, args["num_clients_pe
 torch.save(ditto_model.state_dict(), PATH / "ditto")
 # test
 accuracy_ditto = evaluate_fl(ditto_model, clients, clients_test, args["per_steps"], save=PATH / "acc_ditto")
-print(accuracy_ditto)
+
+
+###################### TRAINING FedRep ###########################
+fedrep_model = args["model"].to(DEVICE)
+head = copy.deepcopy(fedrep_model.fc)
+fedrep_model.fc = torch.nn.Identity()
+fedrep_model = BaseHeadSplit(fedrep_model, head)
+clients = [FedRep_Client(args["dataset"], client_id, fedrep_model, trainset, client_split, args["loss_fn"], args["lr_outer"], args["batch_size"], args["lr_ft"])
+           for client_id in range(args["num_clients"])]
+
+# train
+fedrep_model = train(fedrep_model, clients, clients_training, args["num_clients_per_round"], args["adapt_steps"], args["global_steps"])
+torch.save(fedrep_model.state_dict(), PATH / "fedrep")
+# test
+accuracy_fedrep = evaluate_fl(fedrep_model, clients, clients_test, args["per_steps"], save=PATH / "acc_fedrep")
+
+
