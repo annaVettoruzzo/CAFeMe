@@ -9,10 +9,10 @@ from sklearn.metrics import accuracy_score
 from torch.optim import Optimizer
 
 # -------------------------------------------------------------------
-#os.system('nvidia-smi -q -d Memory |grep -A6 GPU|grep Free >tmp')
-#memory_available = [int(x.split()[2]) for x in open('tmp', 'r').readlines()]
-#gpu_number = int(np.argmax(memory_available))
-#torch.cuda.set_device(gpu_number)
+os.system('nvidia-smi -q -d Memory |grep -A6 GPU|grep Free >tmp')
+memory_available = [int(x.split()[2]) for x in open('tmp', 'r').readlines()]
+gpu_number = int(np.argmax(memory_available))
+torch.cuda.set_device(gpu_number)
 DEVICE = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
 

@@ -1,7 +1,7 @@
 import torch
 from utils import DEVICE
 import argparse
-from modules import SimpleCNNModuleWithTE, SimpleCNNModule, SimpleFNNModuleWithTE, SimpleFNNModule, ComplexFNNModuleWithTE, ComplexFNNModule
+from modules import SimpleCNNModuleWithTE, SimpleCNNModule, SimpleFNNModuleWithTE, SimpleFNNModule
 
 
 def set_args():
@@ -17,11 +17,7 @@ def set_args():
     args_dict["dataset"] = args.dataset
     args_dict["seed"] = args.seed
     args_dict["partition"] = args.partition
-    """
-    args_dict["dataset"] = "rmnist"
-    args_dict["seed"] = 4
-    args_dict["partition"] = "None"
-    """
+
     if args_dict["dataset"] == "cifar10":
         args_dict["p_val"] = 0.8
         args_dict["num_clients"] = 100
@@ -32,9 +28,9 @@ def set_args():
 
         args_dict["lr_inner"] = 0.05
         args_dict["lr_outer"] = 0.001
-        args_dict['mu'] = 0.1 # for Ditto
+        args_dict['mu'] = 0.1  # for Ditto
         args_dict["lr_ft_pfl"] = 0.05
-        args_dict["lr_ft"] = 0.01
+        args_dict["lr_ft"] = 0.01  # 0.001 for dirichlet 1000
         args_dict["loss_fn"] = torch.nn.CrossEntropyLoss().to(DEVICE)
 
         args_dict["global_steps"] = 1000  # Num of communication rounds
@@ -96,7 +92,7 @@ def set_args():
         args_dict["datasets"] = ["aircraft", "cu_birds", "dtd", "traffic_sign", "vgg_flower", "omniglot", "miniimagenet", "cifar"]
         args_dict["p_val"] = 0.8
         args_dict["num_clients"] = 100
-        args_dict["num_data"] = 600
+        args_dict["num_data"] = 600  # Change this parameters for obtaining Fig.5
         args_dict["num_classes"] = 10
         args_dict["batch_size"] = 30
         args_dict["num_clients_per_round"] = 5

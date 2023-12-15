@@ -52,6 +52,13 @@ class TaskEncoder(torch.nn.Module):
 
 # -------------------------------------------------------------------
 class SimpleCNNModuleWithTE(torch.nn.Module):
+    """
+        This is the overall model of CAFeMe in the original paper comprising both the federated modulator and the base model.
+        Three different type of parameters modulations can be choosen :
+        - modulation = 'c0'
+        - modulation = 'c1' (this is used in the final experiments)
+        - modulation = 'c2'
+    """
     def __init__(self, conv_dim=[3, 64, 64, 64], dense_dim=[576, 576, 576], n_classes=62, modulation="c1"):
         super().__init__()
 

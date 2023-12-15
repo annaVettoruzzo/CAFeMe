@@ -7,6 +7,7 @@ from utils import DEVICE, func_call, serialize_model_params, evaluate_client, Pe
 
 
 class MultimodalFL_Client:
+    """ This is the proposed CAFeMe approach. """
     def __init__(self, dataset, client_id, global_model, trainset, client_split, loss_fn, lr_in, lr_out=0.001, batch_size=20, lr_ft=0.05):
         self.trainloader, self.valloader = get_dataloader(dataset, trainset, client_split, client_id, batch_size, val_ratio=0.2)
         self.iter_trainloader = iter(self.trainloader)

@@ -149,10 +149,17 @@ class TaskEncoderComplex(torch.nn.Module):
 
 # -------------------------------------------------------------------
 class ComplexFNNModuleWithTE(torch.nn.Module):
+    """
+        This is the overall model of CAFeMe in the original paper comprising both the federated modulator and the base model.
+        Three different type of parameters modulations can be choosen :
+        - modulation = 'c0'
+        - modulation = 'c1' (this is used in the final experiments)
+        - modulation = 'c2'
+    """
     def __init__(self, conv_dim=[1, 32, 64, 64], dense_dim=[1024, 512, 512], n_classes=10, modulation="c1"):
         super().__init__()
 
-        self.modulation = modulation
+        self.modulation = modulation  # 'c0', 'c1', 'c2'
 
         if modulation in ["c0", "c1"]:
             self.te = TaskEncoder(out_shapes=[(1, conv_dim[1], 1, 1), (1, conv_dim[2], 1, 1), (1, conv_dim[3], 1, 1), (1, dense_dim[0]), (1, dense_dim[1]), (1, dense_dim[2])])

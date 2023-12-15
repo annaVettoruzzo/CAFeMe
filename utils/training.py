@@ -75,6 +75,23 @@ def train_and_eval(global_model, clients, clients_training, clients_test, num_cl
     for step in range(global_steps):
         selected_clients = random.sample(clients_training, num_clients_per_round)
 
+        # Evaluation
+        if step == 0 or (step+1) % 10 == 0:
+            test_acc = evaluate_fl(global_model, clients, clients_test, test_steps, fine_tuning)
+            try:
+                if len(test_acc) > 3:
+                    test_acc = np.mean(test_acc[-3:])
+                    test_accuracy.append(test_acc)
+            except:
+                test_accuracy.append(test_acc)
+
+            dir_name = path_dir / f"step{step}.pt"
+            torch.save({
+                'step': step,
+                'model_state_dict': global_model.state_dict(),
+                'test_acc': test_acc,
+            }, dir_name)
+
         # client local training
         model_params_cache = []
         client_avg_loss = []
@@ -89,22 +106,6 @@ def train_and_eval(global_model, clients, clients_training, clients_test, num_cl
 
         if only_fe:
             reset_weights(global_model, name_layer="lin")
-
-        if (step+1) % 100 == 0:
-            test_acc = evaluate_fl(global_model, clients, clients_test, test_steps, fine_tuning)
-            try:
-                if len(test_acc) > 3:
-                    test_acc = np.mean(test_acc[-3:])
-                    test_accuracy.append(test_acc)
-            except:
-                test_accuracy.append(test_acc)
-
-            dir_name = path_dir / f"step{step + 1}.pt"
-            torch.save({
-                'step': step+1,
-                'model_state_dict': global_model.state_dict(),
-                'test_acc': test_acc,
-            }, dir_name)
 
         if (step+1) % 50 == 0:
             print(f"Step: {step + 1}, loss: {np.mean(client_avg_loss):.5f}", end="\t\r")
@@ -146,7 +147,7 @@ def train_and_eval_ifca(global_model, clients, clients_training, clients_test, n
             for model in global_model:
                 deserialize_specific_model_params(model, aggregated_model_params, "cnn")
 
-        if (step+1) % 100 == 0:
+        if step == 0 or (step+1) % 10 == 0:
             test_acc = evaluate_fl(global_model, clients, clients_test, test_steps, fine_tuning)
             try:
                 if len(test_acc) > 3:

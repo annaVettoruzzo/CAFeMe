@@ -1,3 +1,7 @@
+"""
+    This code requires downloading MetaDataset as *.tfrecords from this repository https://github.com/google-research/meta-dataset/tree/main/meta_dataset.
+"""
+
 import torch
 import random
 import numpy as np
