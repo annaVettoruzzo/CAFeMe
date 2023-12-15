@@ -19,7 +19,7 @@ torch.random.manual_seed(seed)
 np.random.seed(seed)
 random.seed(seed)
 
-dataset = args["dataset"] #rmnist, cifar10, femnist
+dataset = args["dataset"]  # Possible choices: 'rmnist', 'cifar10', 'femnist'
 partition = args["partition"]
 
 # For saving models
@@ -98,7 +98,7 @@ print(f"Accuracy IFCA: {accuracy_ifca}")
 accuracy_ifca_ft = evaluate_fl(ifca_model, clients, clients_test, args["per_steps"], save=PATH / "acc_ifca_ft")
 print(f"Accuracy IFCA-FT: {accuracy_ifca_ft}")
 
-"""
+
 ###################### TRAINING IFCA - with weights sharing ###########################
 n_models = args["n_models_ifca"]
 ifca_sharing_model = [args["model"].to(DEVICE) for _ in range(n_models)]
@@ -112,7 +112,7 @@ for i in range(len(ifca_sharing_model)): torch.save(ifca_sharing_model[i].state_
 # test
 accuracy_ifca_sharing = evaluate_fl(ifca_sharing_model, clients, clients_test, fine_tuning=False, save=PATH / "acc_ifca_sharing")
 print(f"Accuracy IFCA sharing weights: {accuracy_ifca_sharing}")
-"""
+
 ###################### TRAINING DITTO ###########################
 ditto_model = args["model"].to(DEVICE)
 clients = [Ditto_Client(args["dataset"], client_id, ditto_model, trainset, client_split, args["loss_fn"], args["lr_outer"], args['mu'], args["batch_size"], args["lr_ft"])

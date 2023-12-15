@@ -1,7 +1,7 @@
 import torch
 from utils import DEVICE
 import argparse
-from modules import SimpleCNNModuleWithTE, SimpleCNNModule, SimpleFNNModuleWithTE, SimpleFNNModule
+from modules import SimpleCNNModuleWithTE, SimpleCNNModule,CNNModuleWithTE, CNNModule
 
 
 def set_args():
@@ -37,7 +37,7 @@ def set_args():
         args_dict["adapt_steps"] = 5  # Num of local training rounds
         args_dict["per_steps"] = 50  # Num of personalization steps
 
-        args_dict["model_proposed"] = SimpleCNNModuleWithTE(conv_dim=[3, 64, 64, 64], dense_dim=[1024, 576, 576], n_classes=args_dict["num_classes"], modulation="c1")
+        args_dict["model_proposed"] = CNNModuleWithTE(conv_dim=[3, 64, 64, 64], dense_dim=[1024, 576, 576], n_classes=args_dict["num_classes"], modulation="c1")
         args_dict["model"] = SimpleCNNModule(conv_dim=[3, 64, 64, 64], dense_dim=[1024, 576, 576], n_classes=args_dict["num_classes"])
 
     if args_dict["dataset"] == "femnist":
@@ -59,10 +59,8 @@ def set_args():
         args_dict["adapt_steps"] = 8  # Num of local training rounds
         args_dict["per_steps"] = 50  # Num of personalization steps
 
-        args_dict["model_proposed"] = SimpleFNNModuleWithTE(conv_dim=[1, 32, 64], dense_dim=[1024, 512], n_classes=args_dict["num_classes"], modulation="c1")
-        args_dict["model"] = SimpleFNNModule(conv_dim=[1, 32, 64], dense_dim=[1024, 512], n_classes=args_dict["num_classes"])
-        #args_dict["model_proposed"] = SimpleCNNModuleWithTE(conv_dim=[1, 64, 64, 64], dense_dim=[576, 576, 576], n_classes=62, modulation="c1")
-        #args_dict["model"] = SimpleCNNModule(conv_dim=[1, 64, 64, 64], dense_dim=[576, 576, 576], n_classes=62)
+        args_dict["model_proposed"] = SimpleCNNModuleWithTE(conv_dim=[1, 32, 64], dense_dim=[1024, 512], n_classes=args_dict["num_classes"], modulation="c1")
+        args_dict["model"] = SimpleCNNModule(conv_dim=[1, 32, 64], dense_dim=[1024, 512], n_classes=args_dict["num_classes"])
 
     if args_dict["dataset"] == "rmnist":
         args_dict["newrotation"] = False  # True if at test time we want to use clients with different degrees rotations
@@ -85,8 +83,8 @@ def set_args():
         args_dict["adapt_steps"] = 5  # Num of local training rounds
         args_dict["per_steps"] = 50  # Num of personalization steps
 
-        args_dict["model_proposed"] = SimpleFNNModuleWithTE(conv_dim=[1, 32, 64], dense_dim=[1024, 512], n_classes=args_dict["num_classes"], modulation="c1")
-        args_dict["model"] = SimpleFNNModule(conv_dim=[1, 32, 64], dense_dim=[1024, 512], n_classes=args_dict["num_classes"])
+        args_dict["model_proposed"] = SimpleCNNModuleWithTE(conv_dim=[1, 32, 64], dense_dim=[1024, 512], n_classes=args_dict["num_classes"], modulation="c1")
+        args_dict["model"] = SimpleCNNModule(conv_dim=[1, 32, 64], dense_dim=[1024, 512], n_classes=args_dict["num_classes"])
 
     if args_dict["dataset"] == "meta_dataset":
         args_dict["datasets"] = ["aircraft", "cu_birds", "dtd", "traffic_sign", "vgg_flower", "omniglot", "miniimagenet", "cifar"]
@@ -109,8 +107,8 @@ def set_args():
         args_dict["adapt_steps"] = 5  # Num of local training rounds
         args_dict["per_steps"] = 50  # Num of personalization steps
 
-        args_dict["model_proposed"] = SimpleCNNModuleWithTE(conv_dim=[3, 64, 64, 64], dense_dim=[1024, 576, 576], n_classes=args_dict["num_classes"], modulation="c1")
-        args_dict["model"] = SimpleCNNModule(conv_dim=[3, 64, 64, 64], dense_dim=[1024, 576, 576], n_classes=args_dict["num_classes"])
+        args_dict["model_proposed"] = CNNModuleWithTE(conv_dim=[3, 64, 64, 64], dense_dim=[1024, 576, 576], n_classes=args_dict["num_classes"], modulation="c1")
+        args_dict["model"] = CNNModule(conv_dim=[3, 64, 64, 64], dense_dim=[1024, 576, 576], n_classes=args_dict["num_classes"])
 
     return args_dict
 
